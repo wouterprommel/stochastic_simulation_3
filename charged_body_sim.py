@@ -12,17 +12,18 @@ class sim():
 
         self.step_size = 0.1 
         # part of annealing proces
-        self.T = 200
+        self.T = 10
         self.i_step = 0
 
     def markov_chain_mc(self, N, n=None):
         for group_step in range(N):
-            if self.i_step % 100:
-                 self.T *= 0.80
-            self.i_step += 1
-            print(f'step {self.i_step}, energy {self.energy()}, temperature {self.T}')
-
             for i, particle in self.particles.items():
+                if self.i_step % 10 == 0:
+                    print(self.i_step)
+                    self.T *= 0.90
+                self.i_step += 1
+                print(f'step {self.i_step}, energy {self.energy()}, temperature {self.T}')
+
                 step = np.random.uniform(-self.step_size, self.step_size, size=(2,))
                 pos = particle.vec()
                 before_energy = self.energy()
@@ -37,7 +38,8 @@ class sim():
                 delta_energy = after_energy - before_energy
 
                 if delta_energy > 0:
-                    print(np.exp(-delta_energy/self.T), delta_energy)
+                    print(np.exp(-delta_energy/self.T))
+                    assert np.exp(-delta_energy/self.T) != 0
                     if np.random.rand() > np.exp(-delta_energy/self.T): # > it is the chance of rejection !! set it back if true
                         particle.update(pos) # give old position
                         assert self.energy() == before_energy, 'Reset has failed'
@@ -175,6 +177,6 @@ class particle():
         self.r = r
         return True
 
-sim = sim(10)
+sim = sim(9)
 # sim.markov_chain_mc(20)
 sim.animate()
