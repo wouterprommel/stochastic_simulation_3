@@ -18,9 +18,10 @@ class sim():
     def markov_chain_mc(self, N, n=None):
         for group_step in range(N):
             if self.i_step % 100:
-                 self.T *= 0.95
+                 self.T *= 0.80
             self.i_step += 1
-            print(f'step {n}, energy {self.energy()}, temperature {self.T}')
+            print(f'step {self.i_step}, energy {self.energy()}, temperature {self.T}')
+
             for i, particle in self.particles.items():
                 step = np.random.uniform(-self.step_size, self.step_size, size=(2,))
                 pos = particle.vec()
@@ -29,12 +30,17 @@ class sim():
                 while not particle.update(pos + step): # give new position, and check if allowed, else make new step
                     step = np.random.uniform(-self.step_size, self.step_size, size=(2,))
 
+                # energy after step
                 after_energy = self.energy()
+
+                # difference in energy
                 delta_energy = after_energy - before_energy
 
-                if delta_energy > 0 and np.random.rand() > np.exp(-delta_energy/self.T):
-                    particle.update(pos) # give old position
-                    assert self.energy() == before_energy, 'Reset has failed'
+                if delta_energy > 0:
+                    print(np.exp(-delta_energy/self.T), delta_energy)
+                    if np.random.rand() > np.exp(-delta_energy/self.T): # > it is the chance of rejection !! set it back if true
+                        particle.update(pos) # give old position
+                        assert self.energy() == before_energy, 'Reset has failed'
 
     
     def forces(self):
@@ -158,15 +164,17 @@ class particle():
         return energy
 
     def update(self, new_pos):
-        self.x = new_pos[0]
-        self.y = new_pos[1]
-        self.theta = np.arctan(self.y/self.x)
-        self.r = np.sqrt(self.x**2 + self.y**2)
-        if 1 - self.r <= 0:
+        x = new_pos[0]
+        y = new_pos[1]
+        r = np.sqrt(x**2 + y**2)
+        if 1 - r <= 0:
             return False
-        else: 
-            return True
+        self.x = x
+        self.y = y
+        self.theta = np.arctan(self.y/self.x)
+        self.r = r
+        return True
 
-sim = sim(16)
-#sim.markov_chain_mc(20)
+sim = sim(10)
+# sim.markov_chain_mc(20)
 sim.animate()
