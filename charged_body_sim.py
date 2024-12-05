@@ -10,15 +10,17 @@ class sim():
         for i in range(self.n_particles):
             self.particles[i] = particle(i)
 
-        self.step_size = 0.2 
+        self.step_size = 0.1 
         # part of annealing proces
         self.T = 200
+        self.i_step = 0
 
     def markov_chain_mc(self, N, n=None):
         for group_step in range(N):
-            print(f'step {n}, energy {self.energy()}')
-            if n % 10 == 0 or group_step % 10 == 0:
-                self.T -= 10
+            if self.i_step % 100:
+                 self.T *= 0.95
+            self.i_step += 1
+            print(f'step {n}, energy {self.energy()}, temperature {self.T}')
             for i, particle in self.particles.items():
                 step = np.random.uniform(-self.step_size, self.step_size, size=(2,))
                 pos = particle.vec()
@@ -30,8 +32,8 @@ class sim():
                 after_energy = self.energy()
                 delta_energy = after_energy - before_energy
 
-                if delta_energy > 0 and np.random.rand() < np.exp(-delta_energy/self.T):
-                    particle.update(pos) # give new position
+                if delta_energy > 0 and np.random.rand() > np.exp(-delta_energy/self.T):
+                    particle.update(pos) # give old position
                     assert self.energy() == before_energy, 'Reset has failed'
 
     
@@ -98,6 +100,7 @@ class sim():
         self.scat = axis.scatter(points[:, 0], points[:, 1], label=f'{i}')
         
         ani = animation.FuncAnimation(fig=fig, func=self.update, frames=11, interval=30)
+        plt.gca().set_aspect('equal')
         plt.show()
 
 
