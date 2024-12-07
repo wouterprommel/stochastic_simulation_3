@@ -45,7 +45,7 @@ class sim():
                 before_energy = self.energy()
 
                 # run info 
-                # print(step_size, self.i_step, self.T, before_energy)
+                print(step_size, self.i_step, self.T, before_energy)
 
                 self.energy_list.append(before_energy)
                 self.temperature_list.append(self.T)
@@ -58,7 +58,8 @@ class sim():
 
 
                 while not particle.update(pos + step): # give new position, and check if allowed, else make new step
-                    step = np.random.uniform(-self.step_size, self.step_size, size=(2,))
+                    step = 0.5*np.random.uniform(-step_size, step_size, size=(2,)) - 0.5*(force/force_norm * step_size)
+                    #step = np.random.uniform(-self.step_size, self.step_size, size=(2,))
 
                 # energy after step
                 after_energy = self.energy()
@@ -214,13 +215,13 @@ class particle():
         return True
 
 sim = sim(16)
-# sim.animate()
+sim.animate()
 
-sim.markov_chain_mc(5000)
-print('------------- \n end energy: ', sim.energy(), 'step: ', sim.i_step, '\n ------------------')
-plt.plot( sim.temperature_list, np.array(sim.energy_list)/10)
-plt.plot(sim.temperature_list, sim.specific_heat_list)
-plt.xscale('log')
-# plt.yscale('log')
-plt.show()
-sim.plot()
+# sim.markov_chain_mc(5000)
+# print('------------- \n end energy: ', sim.energy(), 'step: ', sim.i_step, '\n ------------------')
+# plt.plot( sim.temperature_list, np.array(sim.energy_list)/10)
+# plt.plot(sim.temperature_list, sim.specific_heat_list)
+# plt.xscale('log')
+# # plt.yscale('log')
+# plt.show()
+# sim.plot()
