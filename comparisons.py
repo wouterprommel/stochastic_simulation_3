@@ -19,8 +19,8 @@ class sim():
         self.energy_list = []
         self.temperature_list = []
         self.specific_heat_list = []
-        self.step_size = 0.06
-        self.step_size0 = 0.06
+        self.step_size = 0.1#0.06
+        self.step_size0 = 0.1#0.06
     
     def step(self, particle):
         force = particle.force(self.particles)
@@ -28,7 +28,7 @@ class sim():
         step = 0.9*np.random.uniform(-self.step_size, self.step_size, size=(2,)) - 0.1*(force/force_norm * self.step_size)
         return step
 
-    def markov_chain_mc(self, N, n=None, schedule='default', alpha=0.9, C=1.0):
+    def markov_chain_mc(self, N, n=None, schedule='default', alpha=0.95, C=1000):
         for group_step in range(N):
             if group_step % 100 == 0 and N > 1:
                 #print('E', self.energy(), 'step', self.i_step, 'step size', self.step_size)
@@ -37,14 +37,16 @@ class sim():
             for i, particle in self.particles.items():
                 if self.i_step % 100 == 0:
                     if schedule == 'linear':
-                        self.T = max(self.T0 - alpha * self.i_step, 0.01)
-                        self.step_size = max(self.step_size0 - alpha * self.i_step, 0.001)
+                        self.T = np.max(self.T0 - alpha * self.i_step, 0.01)
+                        self.step_size = np.max(self.step_size0 - alpha * self.i_step, 0.001)
                     elif schedule == 'exponential':
                         self.T = self.T0 * (alpha ** self.i_step)
                         self.step_size = self.step_size0 * (alpha ** self.i_step)
                     elif schedule == 'logarithmic':
                         self.T = C / (np.log(1 + self.i_step))
-                        self.step_size = self.step_size0 / (np.log(1 + self.i_step))
+                        self.step_size = max(self.step_size0 / (np.log(1 + self.i_step)), 0.001)
+
+                        #self.step_size = C / (np.log(1 + self.i_step))
                     elif schedule == 'default':
                         self.T = self.T * 0.9
                         self.step_size = self.step_size * 0.99
@@ -216,8 +218,8 @@ class particle():
 # 16: 3-circle, 116.57
 
 #sim = sim(11, schedule= 'linear')
-sim = sim(11, schedule= 'exponential')
-#sim = sim(11, schedule= 'logarithmic')
+#sim = sim(12, schedule= 'exponential')
+sim = sim(16, schedule= 'logarithmic')
 #sim = sim(11, schedule= 'default')
 sim.animate()
 
