@@ -13,8 +13,8 @@ class sim():
         # self.step_size = 0.05 
 
         # start temp
-        self.T = 1000
-        self.T_initial = 1000
+        self.T = 35
+        self.T_initial = 35
         self.i_step = 1
         self.energy_list = []
         self.temperature_list = []
@@ -24,9 +24,16 @@ class sim():
 
     def markov_chain_mc(self, N, n=None):
         for group_step in range(N):
+            self.T = self.T_initial / (1 + 0.005*self.i_step)
+            self.step_size = self.step_size_initial / (1 + 0.0005*self.i_step)
+
+                #every step now (change, at annealing)
+            if self.step_size < 0:
+                return False
+
             if group_step % 100 == 0 and N > 1:
                 # show info and plot of run during sim every ~1min
-                print('E', self.energy(), 'step', self.i_step, 'step size', self.step_size)
+                #print('T', self.T, 'E', self.energy(), 'step', self.i_step, 'step size', self.step_size)
                 self.plot()
 
             for i, particle in self.particles.items():
@@ -39,13 +46,6 @@ class sim():
                 # 0.3 naar 0.001
                 # 1 to 1800
                 # annealing of temperature
-                if self.i_step % 50 == 0:
-                    self.T = self.T_initial / (1 + 0.15 * self.i_step)
-                    self.step_size = self.step_size_initial / (np.log(1 + self.i_step))
-
-                #every step now (change, at annealing)
-                if self.step_size < 0:
-                    return False
 
                 # step_size = 2/np.log(2*self.i_step)
                 # step dirction is 50/50 random and by force
@@ -56,7 +56,7 @@ class sim():
                 before_energy = self.energy()
 
                 # run info 
-                print(self.step_size, self.i_step, self.T, before_energy)
+                print(self.T, self.step_size, self.i_step, before_energy)
 
                 self.energy_list.append(before_energy)
                 self.temperature_list.append(self.T)
@@ -100,12 +100,18 @@ class sim():
             total_energy += particle.energy(self.particles)
         return total_energy
 
+        
     def plot(self):
         fig, axis = plt.subplots(1,2)
 
-        axis[1].plot( self.temperature_list, np.array(self.energy_list)/10)
-        axis[1].plot(self.temperature_list, self.specific_heat_list)
-        axis[1].set_xscale('log')
+        ln_temperature = np.log(self.temperature_list)
+        scaled_energy = np.array(self.energy_list) / 10
+
+        axis[1].plot(ln_temperature, scaled_energy, label="Energy (E/10)")
+        axis[1].plot(ln_temperature, self.specific_heat_list, label="Specific Heat (C(T))")
+        axis[1].set_xlabel("ln(T)")
+        axis[1].set_ylabel("Scaled Energy / Specific Heat")
+        axis[1].legend()
 
         # plot circle
         circle = np.linspace(0, 2*np.pi, 1000)
@@ -113,12 +119,6 @@ class sim():
         circle_Y = np.sin(circle)
         axis[0].plot(circle_x, circle_Y)
 
-        # # plot particles
-        # for i, particle in self.particles.items():
-        #     x, y = particle.get_xy()
-        #     axis.scatter(x, y, label=f'{i}')
-
-        # plot particles
         points = []
         for i, particle in self.particles.items():
             points.append(particle.vec())
@@ -127,6 +127,7 @@ class sim():
         axis[0].scatter(points[:, 0], points[:, 1], label=f'{i}')
         axis[0].axis('equal')
         plt.show()
+
     
     def update(self, n):
         self.markov_chain_mc(1, n=n)
@@ -195,7 +196,7 @@ class particle():
                 #dist_to_particle = np.sqrt((x_other - x_self)**2 + (y_other - y_self)**2)
                 vec_to_particle = pos - particle.vec()
                 dist_to_particle = np.sqrt(vec_to_particle.dot(vec_to_particle))
-                force_to_particle = vec_to_particle/dist_to_particle**3
+                force_to_particle = vec_to_particle/(dist_to_particle**3)
 
                 total_force -= force_to_particle
 
@@ -213,6 +214,7 @@ class particle():
 
                 energy += 1/dist_to_particle
         return energy
+
 
     def update(self, new_pos):
         x = new_pos[0]
@@ -240,7 +242,7 @@ class particle():
 # 40: 22.65 # 4-10-bal
 # 40: 22.608 # 3-10-bal
 
-sim = sim(15)
+sim = sim(11)
 sim.animate()
 
 sim.markov_chain_mc(5000)
