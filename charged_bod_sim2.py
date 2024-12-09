@@ -11,28 +11,25 @@ class sim():
             self.particles[i] = particle(i)
 
         # start temp
-        self.T = 35
-        self.T0 = 35
+        self.T = 350
+        self.T_initial = 350
         self.i_step = 1
         self.energy_list = []
         self.temperature_list = []
         self.specific_heat_list = []
         self.step_size = 0.25
-        self.step_size0 = 0.25
-    
+        self.step_size_initial = 0.25
+
     def step(self, particle):
         force = particle.force(self.particles)
         force_norm = np.sqrt(force.dot(force))
        
         step = 0.9*np.random.uniform(-self.step_size, self.step_size, size=(2,)) - 0.1*(force/force_norm * self.step_size)
+       
         return step
-
 
     def markov_chain_mc(self, N, n=None):
         for group_step in range(N):
-
-            self.T = self.T0 / (1 + 0.2 * self.i_step)
-            self.step_size = self.step_size0 / (np.log(1 + self.i_step))
 
             if group_step % 100 == 0 and N > 1:
                 # show info and plot of run during sim every ~1min
@@ -40,33 +37,24 @@ class sim():
                 self.plot()
 
             for i, particle in self.particles.items():
-                
-                # Simple annealing
-                # annealing of temperature
-                '''if self.i_step % 100 == 0:
-                    self.T *= 0.9
-                    self.step_size *= 0.99'''
-
                 self.i_step += 1
 
+                force = particle.force(self.particles)
+                force_norm = np.sqrt(force.dot(force))
+
                 if self.i_step % 50 == 0:
-                    self.T = self.T_initial / (1 + 0.2 * self.i_step)
+                    self.T *= 0.95 #self.T_initial / (1 + 0.5 * self.i_step)
                     self.step_size = self.step_size_initial / (np.log(1 + self.i_step))
 
-                #every step now (change, at annealing)
+               
                 if self.step_size < 0:
                     return False
-                    
-                # step_size = 2/np.log(2*self.i_step)
-                # step dirction is 50/50 random and by force
-                # isn't actually 50/50 bc. random vec norm can be bigger than stepsize
-    
-
+              
                 pos = particle.vec()
                 before_energy = self.energy()
 
                 # run info 
-                print(self.step_size, self.i_step, self.T, before_energy)
+                print(self.T, self.step_size, self.i_step, before_energy)
 
                 self.energy_list.append(before_energy)
                 self.temperature_list.append(self.T)
@@ -75,8 +63,6 @@ class sim():
                 specific_heat = (E.dot(E)/len(E) - np.mean(E)**2 ) # / self.T / self.T
 
                 self.specific_heat_list.append(specific_heat)
-                # print(f'step {self.i_step}, energy {self.energy()}, temperature {self.T}, specific_heat {specific_heat}')
-
 
                 step = self.step(particle)
                 while not particle.update(pos + step): # give new position, and check if allowed, else make new step
@@ -93,16 +79,22 @@ class sim():
                     # assert p != 0
                     if np.random.rand() > p: # > it is the chance of rejection !! set it back if true
                         particle.update(pos) # give old position
-                        # assert self.energy() == before_energy, 'Reset has failed'
-
-            if self.specific_heat_list[-1] < 0.1:
+                        assert self.energy() == before_energy, 'Reset has failed'
+            if self.specific_heat_list[-1] < 0.5:
                 return True
+
+    
+    def forces(self):
+        for i, particle in self.particles.items():
+            force = particle.force(self.particles)
+            print(i, force)
+            # not finished
 
     def energy(self):
         total_energy = 0
         for i, particle in self.particles.items():
             total_energy += particle.energy(self.particles)
-        return total_energy #/self.n_particles 
+        return total_energy
 
     def plot(self):
         fig, axis = plt.subplots(1,2)
@@ -116,11 +108,6 @@ class sim():
         circle_x = np.cos(circle)
         circle_Y = np.sin(circle)
         axis[0].plot(circle_x, circle_Y)
-
-        # # plot particles
-        # for i, particle in self.particles.items():
-        #     x, y = particle.get_xy()
-        #     axis.scatter(x, y, label=f'{i}')
 
         # plot particles
         points = []
@@ -139,15 +126,12 @@ class sim():
             points.append(particle.vec())
 
         points = np.array(points)
-        # self.sl[0].set_offsets(points)
-        # self.sl[1].set_data(list(range(len(self.energy_list))), self.energy_list)
         self.scat.set_offsets(points)
 
 
         return [self.scat]
 
     def animate(self):
-        # fig, (ax1, ax2) = plt.subplots(1,2)
         fig, ax1 = plt.subplots(1,1)
 
         # plot circle
@@ -163,14 +147,10 @@ class sim():
 
         points = np.array(points)
         self.scat = ax1.scatter(points[:, 0], points[:, 1], label=f'{i}')
-        # self.line = ax2.plot([0,1] , [0,1])[0]
-        # self.sl = [self.scat, self.line]
-        
+
         self.ani = animation.FuncAnimation(fig=fig, func=self.update, frames=10, blit=True, interval=30)
         ax1.set_aspect('equal')
         plt.show()
-
-
 
 
 class particle():
@@ -211,7 +191,6 @@ class particle():
         for i, particle in particles.items():
             if i != self.id and i > self.id: # only check i > id to avoid duplicates
 
-                #dist_to_particle = np.sqrt((x_other - x_self)**2 + (y_other - y_self)**2)
                 vec_to_particle = particle.vec() - pos 
                 dist_to_particle = np.sqrt(vec_to_particle.dot(vec_to_particle))
 
@@ -231,7 +210,7 @@ class particle():
         return True
 
 
-sim = sim(11)
+sim = sim(15)
 sim.animate()
 
 sim.markov_chain_mc(5000)
