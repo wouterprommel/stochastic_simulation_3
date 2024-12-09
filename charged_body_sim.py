@@ -10,25 +10,28 @@ class sim():
         for i in range(self.n_particles):
             self.particles[i] = particle(i)
 
-        self.step_size = 0.05 
+        # self.step_size = 0.05 
 
         # start temp
-        self.T = 200
+        self.T = 350
         self.i_step = 1
         self.energy_list = []
         self.temperature_list = []
         self.specific_heat_list = []
+        self.step_size = 0.4
 
     def markov_chain_mc(self, N, n=None):
         for group_step in range(N):
             if group_step % 100 == 0 and N > 1:
                 # show info and plot of run during sim every ~1min
-                print('E', self.energy(), 'step', self.i_step)
+                print('E', self.energy(), 'step', self.i_step, 'step size', self.step_size)
                 self.plot()
+
             for i, particle in self.particles.items():
                 # annealing of temperature
                 if self.i_step % 50 == 0:
-                    self.T *= 0.9
+                    self.T *= 0.95
+
 
                 self.i_step += 1
 
@@ -36,16 +39,26 @@ class sim():
                 force_norm = np.sqrt(force.dot(force))
 
                 # step size decreases as amount of steps grows.
-                step_size = 1/np.log(self.i_step)
+                # 0.3 naar 0.001
+                # 1 to 1800
+                if self.step_size <= 0.0003:
+                    np.log(self.step_size)
+                    self.step_size -= 0.0000001
+                else:
+                    self.step_size -= 0.0001260
+
+                if self.step_size < 0:
+                    return False
+                # step_size = 2/np.log(2*self.i_step)
                 # step dirction is 50/50 random and by force
                 # isn't actually 50/50 bc. random vec norm can be bigger than stepsize
-                step = 0.5*np.random.uniform(-step_size, step_size, size=(2,)) - 0.5*(force/force_norm * step_size)
+                step = 0.6*np.random.uniform(-self.step_size, self.step_size, size=(2,)) - 0.4*(force/force_norm * self.step_size)
 
                 pos = particle.vec()
                 before_energy = self.energy()
 
                 # run info 
-                print(step_size, self.i_step, self.T, before_energy)
+                print(self.step_size, self.i_step, self.T, before_energy)
 
                 self.energy_list.append(before_energy)
                 self.temperature_list.append(self.T)
@@ -58,7 +71,8 @@ class sim():
 
 
                 while not particle.update(pos + step): # give new position, and check if allowed, else make new step
-                    step = 0.5*np.random.uniform(-step_size, step_size, size=(2,)) - 0.5*(force/force_norm * step_size)
+                    #step = 0.6*np.random.uniform(-self.step_size, self.step_size, size=(2,)) - 0.4*(force/force_norm * self.step_size)
+                    step = 0.5*np.random.uniform(-self.step_size, self.step_size, size=(2,)) - 0.5*(force/force_norm * self.step_size)
                     #step = np.random.uniform(-self.step_size, self.step_size, size=(2,))
 
                 # energy after step
@@ -73,6 +87,8 @@ class sim():
                     if np.random.rand() > p: # > it is the chance of rejection !! set it back if true
                         particle.update(pos) # give old position
                         assert self.energy() == before_energy, 'Reset has failed'
+            if self.specific_heat_list[-1] < 0.5:
+                return True
 
     
     def forces(self):
@@ -180,7 +196,6 @@ class particle():
             if i != self.id:
 
                 #dist_to_particle = np.sqrt((x_other - x_self)**2 + (y_other - y_self)**2)
-                vec_to_particle = particle.vec() - pos 
                 vec_to_particle = pos - particle.vec()
                 dist_to_particle = np.sqrt(vec_to_particle.dot(vec_to_particle))
                 force_to_particle = vec_to_particle/dist_to_particle**3
@@ -214,14 +229,29 @@ class particle():
         self.r = r
         return True
 
-sim = sim(16)
-sim.animate()
 
-# sim.markov_chain_mc(5000)
-# print('------------- \n end energy: ', sim.energy(), 'step: ', sim.i_step, '\n ------------------')
-# plt.plot( sim.temperature_list, np.array(sim.energy_list)/10)
-# plt.plot(sim.temperature_list, sim.specific_heat_list)
-# plt.xscale('log')
-# # plt.yscale('log')
-# plt.show()
-# sim.plot()
+# 11: 4.474 # force2
+# 11: 4.426 # force3
+# 12: 4.97 # force3
+
+# 16: 7.35 # 3-bal should be 2
+# 17: 7.91 # 3-bal V
+# 20: 9.70 # 3-bal V
+# 21: 10.31 # 4-bal V
+# 22: 10.99 # 5-bal V
+
+# 40: 22.65 # 4-10-bal
+# 40: 22.608 # 3-10-bal
+
+sim = sim(40)
+#sim.animate()
+
+sim.markov_chain_mc(5000)
+
+print('------------- \n end energy: ', sim.energy(), 'step: ', sim.i_step, '\n ------------------')
+plt.plot( sim.temperature_list, np.array(sim.energy_list)/10)
+plt.plot(sim.temperature_list, sim.specific_heat_list)
+plt.xscale('log')
+# plt.yscale('log')
+plt.show()
+sim.plot()
