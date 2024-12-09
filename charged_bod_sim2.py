@@ -11,8 +11,8 @@ class sim():
             self.particles[i] = particle(i)
 
         # start temp
-        self.T = 350
-        self.T_initial = 350
+        self.T = 1000
+        self.T_initial = 1000
         self.i_step = 1
         self.energy_list = []
         self.temperature_list = []
@@ -43,7 +43,7 @@ class sim():
                 force_norm = np.sqrt(force.dot(force))
 
                 if self.i_step % 50 == 0:
-                    self.T *= 0.95 #self.T_initial / (1 + 0.5 * self.i_step)
+                    self.T = self.T_initial / (1 + 0.05 * self.i_step)
                     self.step_size = self.step_size_initial / (np.log(1 + self.i_step))
 
                
@@ -210,7 +210,7 @@ class particle():
         return True
 
 
-sim = sim(15)
+sim = sim(16)
 sim.animate()
 
 sim.markov_chain_mc(5000)
