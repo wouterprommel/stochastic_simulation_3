@@ -10,30 +10,52 @@ class sim():
         for i in range(self.n_particles):
             self.particles[i] = particle(i)
 
-        # self.step_size = 0.05 
-
         # start temp
         self.T = 1000
-        self.T_initial = 1000
+        self.T0 = 1000
         self.i_step = 1
         self.energy_list = []
         self.temperature_list = []
         self.specific_heat_list = []
-        self.step_size = 0.25
-        self.step_size_initial = 0.25
+        self.step_size = 0.06
+        self.step_size0 = 0.06
+    
+    def step(self, particle):
+        # step_size = 2/np.log(2*self.i_step)
+        # step dirction is 50/50 random and by force
+        # isn't actually 50/50 bc. random vec norm can be bigger than stepsize
+        # step = 0.9*np.random.uniform(-self.step_size, self.step_size, size=(2,)) - 0.1*(force/force_norm * self.step_size)
+        force = particle.force(self.particles)
+        force_norm = np.sqrt(force.dot(force))
+        #step = force/force_norm * self.i_step
+        step = 0.9*np.random.uniform(-self.step_size, self.step_size, size=(2,)) - 0.1*(force/force_norm * self.step_size)
+        # step = 1*np.random.uniform(-self.step_size, self.step_size, size=(2,)) - 0.1*(force/force_norm * self.step_size)
+        #step = np.random.uniform(-self.step_size, self.step_size, size=(2,))
+        return step
+
 
     def markov_chain_mc(self, N, n=None):
         for group_step in range(N):
+
+            ''' #Less simple annealing
+            if self.i_step % 50 == 0:
+                self.T = self.T_initial / (1 + 0.2 * self.i_step)
+                self.step_size = self.step_size_initial / (np.log(1 + self.i_step))'''
+
             if group_step % 100 == 0 and N > 1:
                 # show info and plot of run during sim every ~1min
                 print('E', self.energy(), 'step', self.i_step, 'step size', self.step_size)
                 self.plot()
 
             for i, particle in self.particles.items():
-                self.i_step += 1
+                
+                # Simple annealing
+                # annealing of temperature
+                if self.i_step % 100 == 0:
+                    self.T *= 0.9
+                    self.step_size *= 0.99
 
-                force = particle.force(self.particles)
-                force_norm = np.sqrt(force.dot(force))
+                self.i_step += 1
 
                 # step size decreases as amount of steps grows.
                 # 0.3 naar 0.001
@@ -50,7 +72,7 @@ class sim():
                 # step_size = 2/np.log(2*self.i_step)
                 # step dirction is 50/50 random and by force
                 # isn't actually 50/50 bc. random vec norm can be bigger than stepsize
-                step = 0.9*np.random.uniform(-self.step_size, self.step_size, size=(2,)) - 0.1*(force/force_norm * self.step_size)
+    
 
                 pos = particle.vec()
                 before_energy = self.energy()
@@ -68,10 +90,9 @@ class sim():
                 # print(f'step {self.i_step}, energy {self.energy()}, temperature {self.T}, specific_heat {specific_heat}')
 
 
+                step = self.step(particle)
                 while not particle.update(pos + step): # give new position, and check if allowed, else make new step
-                    #step = 0.6*np.random.uniform(-self.step_size, self.step_size, size=(2,)) - 0.4*(force/force_norm * self.step_size)
-                    step = 0.9*np.random.uniform(-self.step_size, self.step_size, size=(2,)) - 0.1*(force/force_norm * self.step_size)
-                    #step = np.random.uniform(-self.step_size, self.step_size, size=(2,))
+                    step = self.step(particle)
 
                 # energy after step
                 after_energy = self.energy()
@@ -84,22 +105,16 @@ class sim():
                     # assert p != 0
                     if np.random.rand() > p: # > it is the chance of rejection !! set it back if true
                         particle.update(pos) # give old position
-                        assert self.energy() == before_energy, 'Reset has failed'
-            if self.specific_heat_list[-1] < 0.5:
-                return True
+                        # assert self.energy() == before_energy, 'Reset has failed'
 
-    
-    def forces(self):
-        for i, particle in self.particles.items():
-            force = particle.force(self.particles)
-            print(i, force)
-            # not finished
+            if self.specific_heat_list[-1] < 0.1:
+                return True
 
     def energy(self):
         total_energy = 0
         for i, particle in self.particles.items():
             total_energy += particle.energy(self.particles)
-        return total_energy
+        return total_energy #/self.n_particles 
 
     def plot(self):
         fig, axis = plt.subplots(1,2)
@@ -228,20 +243,9 @@ class particle():
         return True
 
 
-# 11: 4.474 # force2
-# 11: 4.426 # force3
-# 12: 4.97 # force3
+# 16: 3-circle, 116.57
 
-# 16: 7.35 # 3-bal should be 2
-# 17: 7.91 # 3-bal V
-# 20: 9.70 # 3-bal V
-# 21: 10.31 # 4-bal V
-# 22: 10.99 # 5-bal V
-
-# 40: 22.65 # 4-10-bal
-# 40: 22.608 # 3-10-bal
-
-sim = sim(15)
+sim = sim(11)
 sim.animate()
 
 sim.markov_chain_mc(5000)
