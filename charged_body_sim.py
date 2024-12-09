@@ -60,19 +60,13 @@ class sim():
                 # step size decreases as amount of steps grows.
                 # 0.3 naar 0.001
                 # 1 to 1800
-                # annealing of temperature
-                if self.i_step % 50 == 0:
-                    self.T = self.T_initial / (1 + 0.2 * self.i_step)
-                    self.step_size = self.step_size_initial / (np.log(1 + self.i_step))
-
-                #every step now (change, at annealing)
-                if self.step_size < 0:
-                    return False
-                    
-                # step_size = 2/np.log(2*self.i_step)
-                # step dirction is 50/50 random and by force
-                # isn't actually 50/50 bc. random vec norm can be bigger than stepsize
-    
+                # if self.step_size <= 0.0003:
+                #     np.log(self.step_size)
+                #     self.step_size -= 0.0000001
+                # else:
+                #     self.step_size -= 0.0000100  
+                # if self.step_size < 0:
+                #     return False
 
                 pos = particle.vec()
                 before_energy = self.energy()
