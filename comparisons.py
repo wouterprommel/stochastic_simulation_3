@@ -13,8 +13,8 @@ class sim():
         for i in range(self.n_particles):
             self.particles[i] = particle(i)
         # start temp
-        self.T = 1000
-        self.T0 = 1000
+        self.T = 2000
+        self.T0 = 2000
         self.i_step = 1
         self.energy_list = []
         self.temperature_list = []
@@ -28,7 +28,7 @@ class sim():
         step = 0.9*np.random.uniform(-self.step_size, self.step_size, size=(2,)) - 0.1*(force/force_norm * self.step_size)
         return step
 
-    def markov_chain_mc(self, N, n=None, schedule='default', alpha=0.95, C=1000):
+    def markov_chain_mc(self, N, n=None, schedule='default', alpha=0.95, C=2000):
         for group_step in range(N):
             if group_step % 100 == 0 and N > 1:
                 #print('E', self.energy(), 'step', self.i_step, 'step size', self.step_size)
@@ -219,7 +219,7 @@ class particle():
 
 #sim = sim(11, schedule= 'linear')
 #sim = sim(12, schedule= 'exponential')
-sim = sim(16, schedule= 'logarithmic')
+sim = sim(16, schedule= 'logarithmic') # works for 16 particles for T = 2000   C = 2000
 #sim = sim(11, schedule= 'default')
 sim.animate()
 
