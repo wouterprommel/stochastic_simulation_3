@@ -5,6 +5,7 @@ import time
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import pandas as pd
+import pickle
 
 class sim():
 
@@ -38,13 +39,13 @@ class sim():
         # step = (force/force_norm * np.random.uniform(0, self.step_size))
         return step
 
-    def markov_chain_mc(self, N, n=None, schedule='default', alpha=0.95, C=1000):
+    def markov_chain_mc(self, N, n=None, schedule='default', alpha=0.95, C=500):
         start = time.time()
         for group_step in range(N):
             if group_step % 100 == 0 and N > 1:
                 now = time.time()
                 #print("current time elapsed: ", now - start)
-                #print('E', self.energy(), 'step', self.i_step, 'step size', self.step_size, 'temp', self.T)
+                print('E', self.energy(), 'step', self.i_step, 'step size', self.step_size, 'temp', self.T, self.end_config())
                 # self.plot()
 
             for i, particle in self.particles.items():
@@ -95,7 +96,7 @@ class sim():
                         particle.update(pos)
                 
 
-            if len(self.energy_list) > 10 and all([np.abs(self.energy_list[-i] - self.energy_list[-i-1]) < 0.001 for i in range(1, self.n_particles-1)]):
+            if len(self.energy_list) > 10 and all([np.abs(self.energy_list[-i] - self.energy_list[-i-1]) < 0.0001 for i in range(1, self.n_particles-1)]):
                 if self.ani is not None:
                     self.ani.pause()
                 else:
@@ -275,25 +276,33 @@ plt.show()
 
 df = pd.read_csv('results.csv')
 
-simm = sim(11, schedule= 'logarithmic')
-simm.markov_chain_mc(5000)
-minimum_length = len(simm.temperature_list)
+# simm = sim(21, schedule= 'logarithmic')
+# simm.markov_chain_mc(5000)
+# minimum_length = len(simm.temperature_list)
 
-for _ in range(10):
-    simm = sim(11, schedule= 'logarithmic')
-    simm.markov_chain_mc(5000)
-    length = len(simm.temperature_list)
-   # if len(simm.temperature_list) < :
-        #min_length = 
-    #print("Length temp list: ", len(simm.temperature_list))
-    df = pd.concat([df, pd.DataFrame.from_dict(data={'E': [sim.energy_list[-1]], 'N':[sim.n_particles], 'Middle':[sim.end_config()]})], ignore_index=True)
-    print("t at 1000 ", simm.temperature_list[1000])
-    #energy = np.array(simm.energy_list)
-    #energy_mean = np.mean(energy)
-    #energy_stdev = np.std(energy)
-    # clean sim for rerun
+for N in range(12, 41):
+    for _ in range(8):
+        simm = sim(N, schedule= 'logarithmic')
+        simm.markov_chain_mc(5000)
+        length = len(simm.temperature_list)
+    # if len(simm.temperature_list) < :
+            #min_length = 
+        #print("Length temp list: ", len(simm.temperature_list))
+        df_simm = pd.DataFrame.from_dict(data={'E': [simm.energy_list[-1]], 'N':[simm.n_particles], 'Middle':[simm.end_config()]})
+        df = pd.concat([df, df_simm], ignore_index=True)
+        print(df_simm)
+        print("t at 1000 ", simm.temperature_list[1000])
+        #energy = np.array(simm.energy_list)
+        #energy_mean = np.mean(energy)
+        #energy_stdev = np.std(energy)
+        # clean sim for rerun
+        print(df[df['N'] == N]['E'])
+        if sum(df['N'] == N) == 0 or all(df[df['N'] == N]['E'] >= simm.energy_list[-1]):
+            with open(f'sims/sim_obj_{N}.obj', 'wb') as f:
+                print('save obj')
+                pickle.dump(simm, f)
 
 
-    #print(sim.energy_list)
 
-# df.to_csv('results.csv', index=False)
+        #print(sim.energy_list)
+        df.to_csv('results.csv', index=False)
