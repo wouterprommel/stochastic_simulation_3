@@ -38,9 +38,8 @@ class sim():
         for group_step in range(N):
 
             ''' #Less simple annealing
-            if self.i_step % 50 == 0:
-                self.T = self.T_initial / (1 + 0.2 * self.i_step)
-                self.step_size = self.step_size_initial / (np.log(1 + self.i_step))'''
+            self.T = self.T_initial / (1 + 0.2 * self.i_step)
+            self.step_size = self.step_size_initial / (np.log(1 + self.i_step))'''
 
             if group_step % 100 == 0 and N > 1:
                 # show info and plot of run during sim every ~1min
