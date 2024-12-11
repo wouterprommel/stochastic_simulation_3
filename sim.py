@@ -3,6 +3,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import pandas as pd
 
 class sim():
 
@@ -10,6 +11,7 @@ class sim():
         self.schedule = schedule
         self.n_particles = n
         self.particles = {}
+        self.ani = None
         for i in range(self.n_particles):
             self.particles[i] = particle(i)
         # start temp
@@ -19,8 +21,9 @@ class sim():
         self.energy_list = []
         self.temperature_list = []
         self.specific_heat_list = []
-        self.step_size = 0.3 # 0.06
-        self.step_size0 = 0.3 # 0.06
+        self.step_size = 0.06 # 0.06
+        self.step_size0 = 0.06 # 0.06
+
     
     def step(self, particle):
         force = particle.force(self.particles)
@@ -34,7 +37,7 @@ class sim():
         # step = (force/force_norm * np.random.uniform(0, self.step_size))
         return step
 
-    def markov_chain_mc(self, N, n=None, schedule='default', alpha=0.95, C=1000):
+    def markov_chain_mc(self, N, n=None, schedule='default', alpha=0.95, C=500):
         for group_step in range(N):
             if group_step % 100 == 0 and N > 1:
                 print('E', self.energy(), 'step', self.i_step, 'step size', self.step_size, 'temp', self.T)
@@ -45,9 +48,11 @@ class sim():
                     if schedule == 'linear':
                         self.T = np.max(self.T0 - alpha * self.i_step, 0.01)
                         self.step_size = np.max(self.step_size0 - alpha * self.i_step, 0.001)
+
                     elif schedule == 'exponential':
                         self.T = self.T0 * (alpha ** self.i_step)
                         self.step_size = self.step_size0 * (alpha ** self.i_step)
+
                     elif schedule == 'logarithmic':
                         self.T = C / (np.log(1 + self.i_step))
                         self.step_size = max(self.step_size0 / (np.log(1 + self.i_step)), 0.001)
@@ -86,8 +91,11 @@ class sim():
                         particle.update(pos)
                 
 
-            if len(self.energy_list) > 10 and all(np.abs(self.energy_list[-i] - self.energy_list[-i-1]) < 0.001 for i in range(20)):
-                return True
+            if len(self.energy_list) > 10 and all([np.abs(self.energy_list[-i] - self.energy_list[-i-1]) < 0.001 for i in range(1, self.n_particles-1)]):
+                if self.ani is not None:
+                    self.ani.pause()
+                else:
+                    return True
 
 
 
@@ -174,6 +182,17 @@ class sim():
         ax1.set_aspect('equal')
         plt.show()
 
+    def end_config(self):
+        radii = []
+        middle = 0
+        for i, particle in self.particles.items():
+            r = particle.r
+            radii.append(r)
+            if r < 0.8:
+                middle += 1
+        return middle
+
+
 
 
 
@@ -242,7 +261,6 @@ class particle():
 # sim = sim(16, schedule= 'logarithmic')
 sim = sim(20, schedule= 'logarithmic')
 sim.animate()
-
 # sim.markov_chain_mc(5000)
 print('------------- \n end energy: ', sim.energy(), 'step: ', sim.i_step, '\n ------------------')
 plt.plot( sim.temperature_list, np.array(sim.energy_list), label='Total system energy')
@@ -252,3 +270,8 @@ plt.xscale('log')
 # plt.yscale('log')
 plt.show()
 # sim.plot()
+
+df = pd.read_csv('results.csv')
+df = pd.concat([df, pd.DataFrame.from_dict(data={'E': [sim.energy_list[-1]], 'N':[sim.n_particles], 'Middle':[sim.end_config()]})], ignore_index=True)
+# print(df)
+df.to_csv('results.csv', index=False)
