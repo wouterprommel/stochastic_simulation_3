@@ -90,7 +90,7 @@ class sim():
                         particle.update(pos)
                 
 
-            if len(self.energy_list) > 10 and all(np.abs(self.energy_list[-i] - self.energy_list[-i-1]) < 0.001 for i in range(20)):
+            if len(self.energy_list) > 10 and all(np.abs(self.energy_list[-i] - self.energy_list[-i-1]) < 0.001 for i in range(1,20)):
                 return True
 
 
