@@ -40,8 +40,8 @@ class sim():
         for group_step in range(N):
             if group_step % 100 == 0 and N > 1:
                 now = time.time()
-                print("current time elapsed: ", now - start)
-                print('E', self.energy(), 'step', self.i_step, 'step size', self.step_size, 'temp', self.T)
+                #print("current time elapsed: ", now - start)
+                #print('E', self.energy(), 'step', self.i_step, 'step size', self.step_size, 'temp', self.T)
                 # self.plot()
 
             for i, particle in self.particles.items():
@@ -179,8 +179,6 @@ class sim():
         plt.show()
 
 
-
-
 class particle():
 
     def __init__(self, i) -> None:
@@ -257,6 +255,22 @@ plt.xscale('log')
 plt.show()
 # sim.plot()'''
 
+simm = sim(11, schedule= 'logarithmic')
+simm.markov_chain_mc(5000)
+minimum_length = len(simm.temperature_list)
 
-sim = sim(11, schedule= 'logarithmic')
-sim.markov_chain_mc(5000)
+for _ in range(10):
+    simm = sim(11, schedule= 'logarithmic')
+    simm.markov_chain_mc(5000)
+    length = len(simm.temperature_list)
+   # if len(simm.temperature_list) < :
+        #min_length = 
+    #print("Length temp list: ", len(simm.temperature_list))
+    print("t at 1000 ", simm.temperature_list[1000])
+    #energy = np.array(simm.energy_list)
+    #energy_mean = np.mean(energy)
+    #energy_stdev = np.std(energy)
+    # clean sim for rerun
+
+
+    #print(sim.energy_list)
