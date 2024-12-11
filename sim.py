@@ -19,8 +19,8 @@ class sim():
         self.energy_list = []
         self.temperature_list = []
         self.specific_heat_list = []
-        self.step_size = 0.1 # 0.06
-        self.step_size0 = 0.1 # 0.06
+        self.step_size = 0.3 # 0.06
+        self.step_size0 = 0.3 # 0.06
     
     def step(self, particle):
         force = particle.force(self.particles)
@@ -38,7 +38,7 @@ class sim():
         for group_step in range(N):
             if group_step % 100 == 0 and N > 1:
                 print('E', self.energy(), 'step', self.i_step, 'step size', self.step_size, 'temp', self.T)
-                self.plot()
+                # self.plot()
 
             for i, particle in self.particles.items():
                 if self.i_step % 200 == 0:
@@ -86,7 +86,7 @@ class sim():
                         particle.update(pos)
                 
 
-            if len(self.specific_heat_list) > 10 and all(specific_heat < 0.1 for specific_heat in self.specific_heat_list[-10:]):
+            if len(self.energy_list) > 10 and all(np.abs(self.energy_list[-i] - self.energy_list[-i-1]) < 0.001 for i in range(20)):
                 return True
 
 
@@ -240,15 +240,15 @@ class particle():
 # sim = sim(11, schedule= 'linear')
 # sim = sim(11, schedule= 'exponential')
 # sim = sim(16, schedule= 'logarithmic')
-sim = sim(16, schedule= 'logarithmic')
+sim = sim(20, schedule= 'logarithmic')
 sim.animate()
 
 # sim.markov_chain_mc(5000)
-"""
 print('------------- \n end energy: ', sim.energy(), 'step: ', sim.i_step, '\n ------------------')
-plt.plot( sim.temperature_list, np.array(sim.energy_list)/10)
-plt.plot(sim.temperature_list, sim.specific_heat_list)
+plt.plot( sim.temperature_list, np.array(sim.energy_list), label='Total system energy')
+plt.plot(sim.temperature_list, sim.specific_heat_list, label='Specific Heat')
+# plt.plot(range(sim.i_step-1), sim.specific_heat_list, label='Specific Heat 2')
 plt.xscale('log')
 # plt.yscale('log')
 plt.show()
-sim.plot()"""
+# sim.plot()
