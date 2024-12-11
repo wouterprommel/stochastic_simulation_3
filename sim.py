@@ -252,6 +252,7 @@ class particle():
         self.r = r
         return True
 
+
 '''
 # 16: 3-circle, 116.57
 
@@ -274,26 +275,33 @@ plt.show()
 # sim.plot()'''
 
 df = pd.read_csv('results.csv')
+n_sim = 10
 
-simm = sim(11, schedule= 'logarithmic')
-simm.markov_chain_mc(5000)
-minimum_length = len(simm.temperature_list)
+#Store all simulations in a list
+sims = []
+for _ in range(n_sim):
+    s = sim(11, schedule='logarithmic')
+    s.markov_chain_mc(5000)
+    sims.append(s)
+    df = pd.concat([df, pd.DataFrame.from_dict(data={'E': [s.energy_list[-1]], 'N':[s.n_particles], 'Middle':[s.end_config()]})], ignore_index=True)
 
-for _ in range(10):
-    simm = sim(11, schedule= 'logarithmic')
-    simm.markov_chain_mc(5000)
-    length = len(simm.temperature_list)
-   # if len(simm.temperature_list) < :
-        #min_length = 
-    #print("Length temp list: ", len(simm.temperature_list))
-    df = pd.concat([df, pd.DataFrame.from_dict(data={'E': [sim.energy_list[-1]], 'N':[sim.n_particles], 'Middle':[sim.end_config()]})], ignore_index=True)
-    print("t at 1000 ", simm.temperature_list[1000])
-    #energy = np.array(simm.energy_list)
-    #energy_mean = np.mean(energy)
-    #energy_stdev = np.std(energy)
-    # clean sim for rerun
+#Minimum length (for plotting, mean and stdev)
+min_length = min(len(s.temperature_list) for s in sims)
+
+#Save end energies before truncation
+energy_end = []
+for s in sims:
+    energy_end.append(s.energy_list[-1])
+
+energy_mean = []
+energy_stdev = []
+
+#Truncate all lists to minimum length for plotting
+for s in sims:
+    s.energy_list = s.energy_list[:min_length]
+    s.temperature_list = s.temperature_list[:min_length]
+    s.specific_heat_list = s.specific_heat_list[:min_length]
 
 
-    #print(sim.energy_list)
 
 # df.to_csv('results.csv', index=False)
