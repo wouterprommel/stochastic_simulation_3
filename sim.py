@@ -1,6 +1,7 @@
 '''Code that will contain some comparison plots'''
 
 import numpy as np
+import time 
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
@@ -35,8 +36,11 @@ class sim():
         return step
 
     def markov_chain_mc(self, N, n=None, schedule='default', alpha=0.95, C=1000):
+        start = time.time()
         for group_step in range(N):
             if group_step % 100 == 0 and N > 1:
+                now = time.time()
+                print("current time elapsed: ", now - start)
                 print('E', self.energy(), 'step', self.i_step, 'step size', self.step_size, 'temp', self.T)
                 # self.plot()
 
@@ -234,7 +238,7 @@ class particle():
         self.r = r
         return True
 
-
+'''
 # 16: 3-circle, 116.57
 
 # sim = sim(11, schedule= 'linear')
@@ -251,4 +255,8 @@ plt.plot(sim.temperature_list, sim.specific_heat_list, label='Specific Heat')
 plt.xscale('log')
 # plt.yscale('log')
 plt.show()
-# sim.plot()
+# sim.plot()'''
+
+
+sim = sim(11, schedule= 'logarithmic')
+sim.markov_chain_mc(5000)
