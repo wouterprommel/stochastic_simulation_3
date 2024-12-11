@@ -253,15 +253,67 @@ class particle():
         self.r = r
         return True
 
-'''
+
+def calc_mean(n_sim, N, stop_N, schedule='logarithmc'):
+    """Runs the simulation N times to calculate mean and stdev among 
+    multiple runs with the same parameters.
+    """
+    
+    df = pd.read_csv('results.csv')
+
+    #Store all simulations in a list
+    sims = []
+    for _ in range(n_sim):
+        s = sim(N, schedule)
+        s.markov_chain_mc(stop_N)
+        sims.append(s)
+        df = pd.concat([df, pd.DataFrame.from_dict(data={'E': [s.energy_list[-1]], 'N':[s.n_particles], 'Middle':[s.end_config()]})], ignore_index=True)
+
+    df.to_csv('results.csv', index=False)
+
+    #Minimum length (for plotting, mean and stdev)
+    min_length = min(len(s.temperature_list) for s in sims)
+
+    #Save last energy before truncation
+    energy_end = []
+    energy_mean = []
+    energy_stdev = []
+
+    #Truncate all lists to minimum length for plotting
+    for s in sims:
+        energy_end.append(s.energy_list[-1])
+        s.energy_list = s.energy_list[:min_length]
+        s.temperature_list = s.temperature_list[:min_length]
+        s.specific_heat_list = s.specific_heat_list[:min_length]
+
+    #Calculate mean and standard deviation per simulation
+    energy_array = np.array([s.energy_list for s in sims])
+    energy_mean = np.mean(energy_array)
+    energy_std = np.std(energy_array)
+
+    temp_array = np.array([s.temperature_list for s in sims])
+    temp_mean = np.mean(temp_array)
+    temp_std = np.std(temp_array)
+
+    sh_array = np.array([s.specific_heat_list for s in sims])
+    sh_mean = np.mean(sh_array)
+    sh_std = np.std(sh_array)
+
+
+def plot_mean():
+    return
+
+
 # 16: 3-circle, 116.57
 
 # sim = sim(11, schedule= 'linear')
 # sim = sim(11, schedule= 'exponential')
 # sim = sim(16, schedule= 'logarithmic')
-sim = sim(20, schedule= 'logarithmic')
-sim.animate()
-# sim.markov_chain_mc(5000)
+
+# sim = sim(20, schedule= 'logarithmic')
+# sim.animate()
+
+'''# sim.markov_chain_mc(5000)
 print('------------- \n end energy: ', sim.energy(), 'step: ', sim.i_step, '\n ------------------')
 plt.plot( sim.temperature_list, np.array(sim.energy_list), label='Total system energy')
 plt.plot(sim.temperature_list, sim.specific_heat_list, label='Specific Heat')
