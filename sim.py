@@ -325,7 +325,7 @@ plt.show()
 
 # print(df)
 # sim.plot()'''
-
+'''
 df = pd.read_csv('results.csv')
 
 # simm = sim(21, schedule= 'logarithmic')
@@ -358,3 +358,4 @@ for N in range(12, 41):
 
         #print(sim.energy_list)
         df.to_csv('results.csv', index=False)
+'''
