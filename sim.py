@@ -306,9 +306,13 @@ def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
     energy_mean = []
     energy_stdev = []
 
+    # steps needed for convergence
+    lengths = []
+
     #Truncate all lists to minimum length for plotting
     for s in sims:
         energy_end.append(s.energy_list[-1])
+        lengths.append(len(s.energy_list))
         s.energy_list = s.energy_list[:min_length]
         s.specific_heat_list = s.specific_heat_list[:min_length]
 
@@ -348,6 +352,7 @@ def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
     plt.tight_layout()
     plt.savefig(f'Figures/N_{N}_nsim{n_sim}_{schedule}.pdf', bbox_inches='tight', format='pdf')
     plt.show()
+    return lengths
 
 
 n_sim = 5
@@ -360,6 +365,8 @@ mid = 1
 calc_mean(n_sim, 12, stop_N, 1, schedule='logarithmic')
 calc_mean(n_sim, 16, stop_N, 2, schedule='logarithmic')
 calc_mean(n_sim, 17, stop_N, 3, schedule='logarithmic')
+lengths = calc_mean(n_sim, N, stop_N, mid, schedule='exponential')
+print(np.mean(lengths), np.std(lengths))
 
 # 16: 3-circle, 116.57
 
