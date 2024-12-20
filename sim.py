@@ -39,7 +39,7 @@ class sim():
         # step = (force/force_norm * np.random.uniform(0, self.step_size))
         return step
 
-    def markov_chain_mc(self, N, n=None, schedule='default', alpha=0.95):
+    def markov_chain_mc(self, N, n=None, schedule='default', alpha=0.95, markov_chain_length=50):
         start = time.time()
         for group_step in range(N):
             if group_step % 100 == 0 and N > 1:
@@ -49,7 +49,7 @@ class sim():
                 # self.plot()
 
             for i, particle in self.particles.items():
-                if self.i_step % 200 == 0:
+                if self.i_step % markov_chain_length == 0:
                     if schedule == 'linear':
                         self.T = np.max(self.T0 - alpha * self.i_step)
                         self.step_size = np.max(self.step_size0 - alpha * self.i_step, 0.001)
@@ -79,8 +79,10 @@ class sim():
                 self.temperature_list.append(self.T)
 
                 E = np.array(self.energy_list)
+
                 specific_heat = (E.dot(E) / len(E) - np.mean(E) ** 2)
-                self.specific_heat_list.append(specific_heat/10)
+
+                self.specific_heat_list.append(specific_heat)
 
                 step = self.step(particle)
                 ntry = 0
@@ -119,8 +121,8 @@ class sim():
 
         # axis[1].scatter( self.temperature_list, np.array(self.energy_list)/10)
         # axis[1].scatter(self.temperature_list, self.specific_heat_list)
-        axis[1].plot(range(self.i_step-1), np.array(self.energy_list))
-        axis[1].plot(range(self.i_step-1), self.specific_heat_list)
+        axis[1].plot(range(self.i_step), np.array(self.energy_list))
+        axis[1].plot(range(self.i_step), self.specific_heat_list)
         axis[1].set_xscale('log')
 
         # plot circle
@@ -281,6 +283,7 @@ def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
 
     #Number of simulations with accepted outcome
     simulations = 0
+    sim_coun_total = 0
     while simulations != n_sim:
         s = sim(N, schedule)
         s.markov_chain_mc(stop_N)
@@ -288,6 +291,7 @@ def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
         #Only accept simulations with correct number of center particles
         if end_config == mid:
             simulations += 1
+            sim_count_total += 1
             sims.append(s)
             print("accepted mid: ", end_config)
             df = pd.concat([df, pd.DataFrame.from_dict(data={'E': [s.energy_list[-1]], 'N':[s.n_particles], 'Middle':[s.end_config()]})], ignore_index=True)
@@ -348,27 +352,28 @@ def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
 
     plt.tight_layout()
     plt.show()
-    return lengths
+    return lengths, sim_coun_total
 
+# sim = sim(16, schedule= 'logarithmic')
+# sim.animate()
+# sim.markov_chain_mc(5000)
 
-n_sim = 3
+n_sim = 5
 N = 12
 stop_N = 5000
 
 #Signifies expected number of particles not on the ring
 mid = 1
 
-lengths = calc_mean(n_sim, N, stop_N, mid, schedule='exponential')
-print(np.mean(lengths), np.std(lengths))
+lengths, total = calc_mean(n_sim, N, stop_N, mid)
+print(np.mean(lengths), np.std(lengths), n_sim/total)
 
 # 16: 3-circle, 116.57
 
 # sim = sim(11, schedule= 'linear')
 # sim = sim(11, schedule= 'exponential')
-# sim = sim(16, schedule= 'logarithmic')
 
 #sim = sim(39, schedule= 'logarithmic')
-#sim.animate()
 
 '''# sim.markov_chain_mc(5000)
 print('------------- \n end energy: ', sim.energy(), 'step: ', sim.i_step, '\n ------------------')
