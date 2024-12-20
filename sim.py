@@ -303,9 +303,13 @@ def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
     energy_mean = []
     energy_stdev = []
 
+    # steps needed for convergence
+    lengths = []
+
     #Truncate all lists to minimum length for plotting
     for s in sims:
         energy_end.append(s.energy_list[-1])
+        lengths.append(len(s.energy_list))
         s.energy_list = s.energy_list[:min_length]
         s.specific_heat_list = s.specific_heat_list[:min_length]
 
@@ -344,16 +348,18 @@ def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
 
     plt.tight_layout()
     plt.show()
+    return lengths
 
 
-n_sim = 1
+n_sim = 3
 N = 12
 stop_N = 5000
 
 #Signifies expected number of particles not on the ring
 mid = 1
 
-calc_mean(n_sim, N, stop_N, mid)
+lengths = calc_mean(n_sim, N, stop_N, mid, schedule='exponential')
+print(np.mean(lengths), np.std(lengths))
 
 # 16: 3-circle, 116.57
 
