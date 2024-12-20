@@ -17,18 +17,18 @@ class sim():
         for i in range(self.n_particles):
             self.particles[i] = particle(i)
         # start temp
-        self.T = 500
-        self.T0 = 500
+        self.T = 1000
+        self.T0 = 1000
         self.i_step = 1
-        self.energy_list = []
-        self.temperature_list = []
-        self.specific_heat_list = []
+        self.energy_list = [self.energy()]
+        self.temperature_list = [self.T0]
+        self.specific_heat_list = [0]
         self.step_size = 0.06 # 0.06
         self.step_size0 = 0.06 # 0.06
 
     
     def step(self, particle):
-        force = particle.force(self.particles)
+        force = particle.force(self.particles, self.i_step)
         force_norm = np.sqrt(force.dot(force))
         rand = np.random.uniform(-1, 1, size=(2,))
         rand_norm = np.sqrt(rand.dot(rand))
@@ -39,7 +39,7 @@ class sim():
         # step = (force/force_norm * np.random.uniform(0, self.step_size))
         return step
 
-    def markov_chain_mc(self, N, n=None, schedule='default', alpha=0.95, C=500):
+    def markov_chain_mc(self, N, n=None, schedule='default', alpha=0.95):
         start = time.time()
         for group_step in range(N):
             if group_step % 100 == 0 and N > 1:
@@ -59,7 +59,7 @@ class sim():
                         self.step_size = self.step_size0 * (alpha ** self.i_step)
 
                     elif schedule == 'logarithmic':
-                        self.T = C / (np.log(1 + self.i_step))
+                        self.T = self.T0 / (np.log(1 + self.i_step))
                         self.step_size = max(self.step_size0 / (np.log(1 + self.i_step)), 0.001)
 
                         #self.step_size = C / (np.log(1 + self.i_step))
@@ -70,34 +70,40 @@ class sim():
                 self.i_step += 1
 
                 pos = particle.vec()
-                before_energy = self.energy()
+                # before_energy = self.energy()
+                before_energy = self.energy_list[-1]
 
                 #print(self.step_size, self.i_step, self.T, before_energy)
 
-                self.energy_list.append(before_energy)
+                # self.energy_list.append(before_energy)
                 self.temperature_list.append(self.T)
 
                 E = np.array(self.energy_list)
                 specific_heat = (E.dot(E) / len(E) - np.mean(E) ** 2)
-                self.specific_heat_list.append(specific_heat)
+                self.specific_heat_list.append(specific_heat/10)
 
                 step = self.step(particle)
                 ntry = 0
-                while not particle.update(pos + step) and ntry < 100:
+                while not particle.update(pos + step) and ntry < 50:
                     ntry += 1
+                        #new random* step
                     step = self.step(particle)
+
 
                 after_energy = self.energy()
                 delta_energy = after_energy - before_energy
 
-                if delta_energy > 0:
-                    p = np.exp(-delta_energy / self.T, dtype='d')
-                    if np.random.rand() > p:
+                p = np.exp(-delta_energy / self.T, dtype='d')
+                if delta_energy > 0 and np.random.rand() > p:
                         particle.update(pos)
+                        self.energy_list.append(before_energy)
+                else:
+                        self.energy_list.append(after_energy)
                 
 
             if len(self.energy_list) > 10 and all([np.abs(self.energy_list[-i] - self.energy_list[-i-1]) < 0.0001 for i in range(1, self.n_particles-1)]):
                 if self.ani is not None:
+                    print('E', self.energy(), 'step', self.i_step, 'step size', self.step_size, 'temp', self.T, self.end_config())
                     self.ani.pause()
                 else:
                     return True
@@ -177,7 +183,7 @@ class sim():
         points = np.array(points)
         scat = ax1.scatter(points[:, 0], points[:, 1], label=f'{i}')
         line2, = ax2.plot(self.temperature_list, self.energy_list)
-        line, = ax2.plot([], self.specific_heat_list)
+        line, = ax2.plot(self.temperature_list, self.specific_heat_list)
         self.sl = [scat, line, line2]
 
         
@@ -204,6 +210,8 @@ class particle():
         self.theta = np.random.rand()*2*np.pi
         self.x = self.r*np.cos(self.theta)
         self.y = self.r*np.sin(self.theta)
+        self.last_i = -1
+        self.last_force = 0
     
     def get_xy(self):
         return self.x, self.y
@@ -211,7 +219,11 @@ class particle():
     def vec(self):
         return np.array([self.x, self.y])
 
-    def force(self, particles):
+    def force(self, particles, i):
+        # if force is needed for same particle at same step. i.e step was outside bc. reuse force from last calc
+        if i == self.last_i:
+            return self.last_force
+
         pos = self.vec()
 
         total_force = 0
@@ -225,6 +237,9 @@ class particle():
                 force_to_particle = vec_to_particle/dist_to_particle**3
 
                 total_force += force_to_particle
+
+        self.last_i = i
+        self.last_force = total_force
 
         return total_force
 
@@ -338,8 +353,8 @@ calc_mean(n_sim, N, stop_N)
 # sim = sim(11, schedule= 'exponential')
 # sim = sim(16, schedule= 'logarithmic')
 
-# sim = sim(20, schedule= 'logarithmic')
-# sim.animate()
+sim = sim(39, schedule= 'logarithmic')
+sim.animate()
 
 '''# sim.markov_chain_mc(5000)
 print('------------- \n end energy: ', sim.energy(), 'step: ', sim.i_step, '\n ------------------')
@@ -353,13 +368,14 @@ plt.show()
 
 # print(df)
 # sim.plot()'''
-'''
+
 df = pd.read_csv('results.csv')
 
+print(df[df['N'] == 39])
 # simm = sim(21, schedule= 'logarithmic')
 # simm.markov_chain_mc(5000)
 # minimum_length = len(simm.temperature_list)
-
+'''
 for N in range(12, 41):
     for _ in range(8):
         simm = sim(N, schedule= 'logarithmic')
@@ -386,4 +402,4 @@ for N in range(12, 41):
 
         #print(sim.energy_list)
         df.to_csv('results.csv', index=False)
-'''
+        '''
