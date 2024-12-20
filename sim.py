@@ -326,16 +326,17 @@ def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
     iterations = list(range(len(energy_mean)))
 
     #Plot mean and stdev.
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5, 6))
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5, 6), gridspec_kw={'hspace': 0})
 
     #Plot energy vs Temp.
     ax1.plot(iterations, energy_mean, label='Energy Mean', color='blue')
     ax1.fill_between(iterations, energy_mean - energy_std, 
                      energy_mean + energy_std, color='blue', 
                      alpha=0.2, label='Energy Std')
-    ax1.set_xlabel('Iterations')
     ax1.set_ylabel('Energy')
     ax1.legend()
+    ax1.grid(True)
+    ax1.tick_params(labelbottom=False)
 
     #Plot specific heat vs Temp.
     ax2.plot(iterations, sh_mean, label='Specific Heat Mean', color='green')
@@ -344,12 +345,13 @@ def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
     ax2.set_xlabel('Iterations')
     ax2.set_ylabel('Specific Heat')
     ax2.legend()
+    ax2.grid(True)
 
     plt.tight_layout()
     plt.show()
 
 
-n_sim = 2
+n_sim = 1
 N = 12
 stop_N = 5000
 
