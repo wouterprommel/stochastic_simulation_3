@@ -338,11 +338,11 @@ def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
     ax1.tick_params(labelbottom=False, labelsize=fontsize - 2)
     ax2.tick_params(labelsize=fontsize - 2)
     #Plot specific heat vs Temp.
-    ax2.plot(iterations, sh_mean, label='Specific Heat Mean', color='tab:green')
+    ax2.plot(iterations, sh_mean, label='Variance Mean', color='tab:green')
     ax2.fill_between(iterations, sh_mean - sh_std, sh_mean + sh_std, 
-                     color='tab:green', alpha=0.2, label='Specific Heat Std')
+                     color='tab:green', alpha=0.2, label='Variance Std')
     ax2.set_xlabel('Iterations', fontsize=fontsize)
-    ax2.set_ylabel('Specific Heat', fontsize=fontsize)
+    ax2.set_ylabel('Variance', fontsize=fontsize)
     ax2.legend(fontsize=fontsize - 2)
     ax2.grid(True)
     plt.tight_layout()
