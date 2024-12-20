@@ -51,7 +51,7 @@ class sim():
             for i, particle in self.particles.items():
                 if self.i_step % 200 == 0:
                     if schedule == 'linear':
-                        self.T = np.max(self.T0 - alpha * self.i_step, 0.01)
+                        self.T = self.T0 - alpha * self.i_step
                         self.step_size = np.max(self.step_size0 - alpha * self.i_step, 0.001)
 
                     elif schedule == 'exponential':
@@ -269,8 +269,8 @@ class particle():
         return True
 
 
-def calc_mean(n_sim, N, stop_N, schedule='logarithmc'):
-    """Runs the simulation N times to calculate mean and stdev among 
+def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
+    """Runs the simulation N times to calculate and plot mean and stdev among 
     multiple runs with the same parameters.
     """
     
@@ -278,20 +278,33 @@ def calc_mean(n_sim, N, stop_N, schedule='logarithmc'):
 
     #Store all simulations in a list
     sims = []
-    for _ in range(n_sim):
+    '''for _ in range(n_sim):
         s = sim(N, schedule)
         s.markov_chain_mc(stop_N)
         sims.append(s)
         df = pd.concat([df, pd.DataFrame.from_dict(data={'E': [s.energy_list[-1]], 'N':[s.n_particles], 'Middle':[s.end_config()]})], ignore_index=True)
+    '''
+    #Number of simulations with accepted outcome
+    simulations = 0
+    while simulations != n_sim:
+        s = sim(N, schedule)
+        s.markov_chain_mc(stop_N)
+        end_config = s.end_config()
+        #Only accept simulations with correct number of center particles
+        if end_config == mid:
+            sims.append(s)
+            print("accepted mid: ", end_config)
+            df = pd.concat([df, pd.DataFrame.from_dict(data={'E': [s.energy_list[-1]], 'N':[s.n_particles], 'Middle':[s.end_config()]})], ignore_index=True)
+        else:
+            print("not accepted mid: ", end_config)
+    
+    print(len(simulations))
 
     df.to_csv('results.csv', index=False)
 
     #Minimum length (for plotting, mean and stdev)
     min_length = min(len(s.temperature_list) for s in sims)
-    #temp = np.array(sims[0].temperature_list[:min_length])
-  
 
-    #Save last energy before truncation
     energy_end = []
     energy_mean = []
     energy_stdev = []
@@ -306,43 +319,45 @@ def calc_mean(n_sim, N, stop_N, schedule='logarithmc'):
     energy_array = np.array([s.energy_list for s in sims])
     energy_mean = np.mean(energy_array, axis=0)
     energy_std = np.std(energy_array, axis=0)
-    iterations = list(range(len(energy_mean)))
 
     sh_array = np.array([s.specific_heat_list for s in sims])
     sh_mean = np.mean(sh_array, axis=0)
     sh_std = np.std(sh_array, axis=0)
+
+    iterations = list(range(len(energy_mean)))
 
     #Plot mean and stdev.
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5, 6))
 
     #Plot energy vs Temp.
     ax1.plot(iterations, energy_mean, label='Energy Mean', color='blue')
-    ax1.fill_between(iterations, energy_mean - energy_std, energy_mean + energy_std, color='blue', alpha=0.2, label='Energy Std')
-   # ax1.set_title('Energy vs Temperature')
-    ax1.set_xlabel('Temperature')
+    ax1.fill_between(iterations, energy_mean - energy_std, 
+                     energy_mean + energy_std, color='blue', 
+                     alpha=0.2, label='Energy Std')
+    ax1.set_xlabel('Iterations')
     ax1.set_ylabel('Energy')
     ax1.legend()
 
     #Plot specific heat vs Temp.
     ax2.plot(iterations, sh_mean, label='Specific Heat Mean', color='green')
-    ax2.fill_between(iterations, sh_mean - sh_std, sh_mean + sh_std, color='green', alpha=0.2, label='Specific Heat Std')
-    #ax2.set_title('Specific Heat vs Temperature')
-    ax2.set_xlabel('Temperature')
+    ax2.fill_between(iterations, sh_mean - sh_std, sh_mean + sh_std, 
+                     color='green', alpha=0.2, label='Specific Heat Std')
+    ax2.set_xlabel('Iterations')
     ax2.set_ylabel('Specific Heat')
     ax2.legend()
 
     plt.tight_layout()
     plt.show()
 
-    
 
-def plot_mean():
-    return
-
-n_sim = 10
-N = 5
+n_sim = 2
+N = 12
 stop_N = 5000
-calc_mean(n_sim, N, stop_N)
+
+#Signifies expected number of particles not on the ring
+mid = 0
+
+calc_mean(n_sim, N, stop_N, mid)
 
 # 16: 3-circle, 116.57
 
@@ -350,8 +365,8 @@ calc_mean(n_sim, N, stop_N)
 # sim = sim(11, schedule= 'exponential')
 # sim = sim(16, schedule= 'logarithmic')
 
-sim = sim(39, schedule= 'logarithmic')
-sim.animate()
+#sim = sim(39, schedule= 'logarithmic')
+#sim.animate()
 
 '''# sim.markov_chain_mc(5000)
 print('------------- \n end energy: ', sim.energy(), 'step: ', sim.i_step, '\n ------------------')
