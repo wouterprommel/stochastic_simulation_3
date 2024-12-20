@@ -7,6 +7,9 @@ import matplotlib.animation as animation
 import pandas as pd
 import pickle
 
+plt.rc('text', usetex=True)
+plt.rc('font', family='serif')
+
 class sim():
 
     def __init__(self, n, schedule = 'default'):	
@@ -320,29 +323,31 @@ def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
 
     iterations = list(range(len(energy_mean)))
 
+    fontsize = 17
     #Plot mean and stdev.
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5, 6), gridspec_kw={'hspace': 0})
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 5), gridspec_kw={'hspace': 0})
 
     #Plot energy vs Temp.
     ax1.plot(iterations, energy_mean, label='Energy Mean', color='tab:blue')
     ax1.fill_between(iterations, energy_mean - energy_std, 
                      energy_mean + energy_std, color='tab:blue', 
                      alpha=0.2, label='Energy Std')
-    ax1.set_ylabel('Energy')
-    ax1.legend()
+    ax1.set_ylabel('Energy', fontsize=fontsize)
+    ax1.legend(fontsize=fontsize - 2)
     ax1.grid(True)
-    ax1.tick_params(labelbottom=False)
-
+    ax1.tick_params(labelbottom=False, labelsize=fontsize - 2)
+    ax2.tick_params(labelsize=fontsize - 2)
     #Plot specific heat vs Temp.
     ax2.plot(iterations, sh_mean, label='Specific Heat Mean', color='tab:green')
     ax2.fill_between(iterations, sh_mean - sh_std, sh_mean + sh_std, 
                      color='tab:green', alpha=0.2, label='Specific Heat Std')
-    ax2.set_xlabel('Iterations')
-    ax2.set_ylabel('Specific Heat')
-    ax2.legend()
+    ax2.set_xlabel('Iterations', fontsize=fontsize)
+    ax2.set_ylabel('Specific Heat', fontsize=fontsize)
+    ax2.legend(fontsize=fontsize - 2)
     ax2.grid(True)
 
     plt.tight_layout()
+    plt.savefig(f'Figures/N_{N}_nsim{n_sim}_{schedule}.pdf', bbox_inches='tight', format='pdf')
     plt.show()
 
 
@@ -353,7 +358,7 @@ stop_N = 5000
 #Signifies expected number of particles not on the ring
 mid = 1
 
-calc_mean(n_sim, N, stop_N, mid)
+calc_mean(n_sim, N, stop_N, mid, schedule='exponential')
 
 # 16: 3-circle, 116.57
 
