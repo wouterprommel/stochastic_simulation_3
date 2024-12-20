@@ -51,7 +51,7 @@ class sim():
             for i, particle in self.particles.items():
                 if self.i_step % 200 == 0:
                     if schedule == 'linear':
-                        self.T = self.T0 - alpha * self.i_step
+                        self.T = np.max(self.T0 - alpha * self.i_step)
                         self.step_size = np.max(self.step_size0 - alpha * self.i_step, 0.001)
 
                     elif schedule == 'exponential':
@@ -355,7 +355,7 @@ N = 12
 stop_N = 5000
 
 #Signifies expected number of particles not on the ring
-mid = 0
+mid = 1
 
 calc_mean(n_sim, N, stop_N, mid)
 
