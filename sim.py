@@ -1,4 +1,9 @@
-'''Code that will contain some comparison plots'''
+"""
+This module simulates the behavior of particles under various schedules 
+using a Markov Chain Monte Carlo (MCMC) method. It includes 
+visualization, energy, and specific heat calculations to study particle 
+interactions.
+"""
 
 import numpy as np
 import time 
@@ -10,17 +15,26 @@ import pickle
 plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 
-class sim():
 
-    def __init__(self, n, schedule = 'default'):	
+class sim():
+    """Class to represent the simulation of particles using MCMC."""
+
+    def __init__(self, n, schedule = 'default'):
+        """
+        Initializes the simulation with the given number of particles 
+        and schedule.
+
+        Arguments:
+            n (int): Number of particles.
+            schedule (str): Schedule type for temperature adjustment.
+        """
         self.schedule = schedule
         self.n_particles = n
         self.particles = {}
         self.ani = None
         for i in range(self.n_particles):
             self.particles[i] = particle(i)
-        # start temp
-        self.T = 1000
+        self.T = 1000 #Start temp
         self.T0 = 1000
         self.i_step = 1
         self.energy_list = [self.energy()]
@@ -31,41 +45,46 @@ class sim():
 
     
     def step(self, particle):
+        '.'
         force = particle.force(self.particles, self.i_step)
         force_norm = np.sqrt(force.dot(force))
+
         rand = np.random.uniform(-1, 1, size=(2,))
         rand_norm = np.sqrt(rand.dot(rand))
-        step = (0.95 * rand/rand_norm + 0.05 * force/force_norm) * self.step_size
-        # step = (0.1 * force/force_norm) * self.step_size
-        # step = rand/rand_norm * self.step_size
-        # step = 0.9*np.random.uniform(-self.step_size, self.step_size, size=(2,)) + 0.05*(force/force_norm * np.random.uniform(0, self.step_size))
-        # step = (force/force_norm * np.random.uniform(0, self.step_size))
+
+        step = self.step_size * (0.95 * rand/rand_norm 
+                                 + 0.05 * force/force_norm)
+
         return step
 
-    def markov_chain_mc(self, N, n=None, schedule='default', alpha=0.95, markov_chain_length=200):
+
+    def markov_chain_mc(self, N, n=None, schedule='default', alpha=0.95, 
+                        markov_chain_length=200):
+        '.'
         start = time.time()
         for group_step in range(N):
             if group_step % 150 == 0 and N > 1:
                 now = time.time()
-                #print("current time elapsed: ", now - start)
-                print('E', self.energy(), 'step', self.i_step, 'step size', self.step_size, 'temp', self.T, self.end_config())
-                # self.plot()
+
+                print('E', self.energy(), 'step', self.i_step, 'step size', 
+                      self.step_size, 'temp', self.T, self.end_config())
 
             for i, particle in self.particles.items():
                 if self.i_step % markov_chain_length == 0:
                     if schedule == 'linear':
-                        self.T = np.max(self.T0 - alpha * self.i_step)
-                        self.step_size = np.max(self.step_size0 - alpha * self.i_step, 0.001)
+                        self.T = np.max(self.T0 - alpha*self.i_step)
+                        self.step_size = np.max(self.step_size0 - alpha 
+                                                * self.i_step, 0.001)
 
                     elif schedule == 'exponential':
-                        self.T = self.T0 * (alpha ** self.i_step)
-                        self.step_size = self.step_size0 * (alpha ** self.i_step)
+                        self.T = self.T0 * (alpha**self.i_step)
+                        self.step_size = self.step_size0 * (alpha**self.i_step)
 
                     elif schedule == 'logarithmic':
                         self.T = self.T0 / (np.log(1 + self.i_step))
-                        self.step_size = max(self.step_size0 / (np.log(1 + self.i_step)), 0.001)
+                        self.step_size = max(self.step_size0 
+                                            / (np.log(1 + self.i_step)), 0.001)
 
-                        #self.step_size = C / (np.log(1 + self.i_step))
                     elif schedule == 'default':
                         self.T = self.T * 0.9
                         self.step_size = self.step_size * 0.99
@@ -73,27 +92,20 @@ class sim():
                 self.i_step += 1
 
                 pos = particle.vec()
-                # before_energy = self.energy()
+
                 before_energy = self.energy_list[-1]
-
-                #print(self.step_size, self.i_step, self.T, before_energy)
-
-                # self.energy_list.append(before_energy)
                 self.temperature_list.append(self.T)
-
                 E = np.array(self.energy_list)
 
                 specific_heat = (E.dot(E) / len(E) - np.mean(E) ** 2)
-
                 self.specific_heat_list.append(specific_heat)
 
                 step = self.step(particle)
+
                 ntry = 0
                 while not particle.update(pos + step) and ntry < 50:
                     ntry += 1
-                        #new random* step
                     step = self.step(particle)
-
 
                 after_energy = self.energy()
                 delta_energy = after_energy - before_energy
@@ -102,42 +114,45 @@ class sim():
                 if delta_energy > 0 and np.random.rand() > p:
                         particle.update(pos)
                         self.energy_list.append(before_energy)
-                else:
-                        self.energy_list.append(after_energy)
-                
 
-            if len(self.energy_list) > 10 and all([np.abs(self.energy_list[-i] - self.energy_list[-i-1]) < 0.0001 for i in range(1, self.n_particles-1)]):
+                else:
+                    self.energy_list.append(after_energy)
+
+            if len(self.energy_list) > 10 and all(
+                    [np.abs(self.energy_list[-i] - self.energy_list[-i-1]) 
+                    < 0.0001 for i in range(1, self.n_particles-1)]):
+
                 if self.ani is not None:
-                    print('E', self.energy(), 'step', self.i_step, 'step size', self.step_size, 'temp', self.T, self.end_config())
+                    print('E', self.energy(), 'step', self.i_step, 'step size',
+                          self.step_size, 'temp', self.T, self.end_config())
+                          
                     self.ani.pause()
+
                 else:
                     return True
 
+
     def energy(self):
+        '.'
         total_energy = 0
         for i, particle in self.particles.items():
             total_energy += particle.energy(self.particles)
-        return total_energy #/self.n_particles 
+
+        return total_energy 
 
     def plot(self):
+        '.'
         fig, axis = plt.subplots(1,2)
 
-        # axis[1].scatter( self.temperature_list, np.array(self.energy_list)/10)
-        # axis[1].scatter(self.temperature_list, self.specific_heat_list)
         axis[1].plot(range(self.i_step), np.array(self.energy_list))
         axis[1].plot(range(self.i_step), self.specific_heat_list)
         axis[1].set_xscale('log')
 
-        # plot circle
+        #Plot circle
         circle = np.linspace(0, 2*np.pi, 1000)
         circle_x = np.cos(circle)
         circle_Y = np.sin(circle)
         axis[0].plot(circle_x, circle_Y)
-
-        # # plot particles
-        # for i, particle in self.particles.items():
-        #     x, y = particle.get_xy()
-        #     axis.scatter(x, y, label=f'{i}')
 
         # plot particles
         points = []
@@ -149,38 +164,41 @@ class sim():
         axis[0].axis('equal')
         plt.show()
     
+
     def update(self, n):
+        '.'
         self.markov_chain_mc(1, n=n)
         points = []
         for i, particle in self.particles.items():
             points.append(particle.vec())
 
         points = np.array(points)
-        # self.sl[0].set_offsets(points)
+
         self.sl[0].set_offsets(points)
         self.sl[2].set_data(self.temperature_list, self.energy_list)
         self.sl[1].set_data(self.temperature_list, self.specific_heat_list)
 
-        self.ax2.set_ylim(min(self.specific_heat_list), max(self.specific_heat_list))
+        self.ax2.set_ylim(min(self.specific_heat_list), 
+                          max(self.specific_heat_list))
         self.ax2.set_xlim(1e-3, 1e3)
         self.ax2.set_xscale('log')
 
-        # return [self.scat]
         return self.sl
 
+
     def animate(self):
+        '.'
         fig, (ax1, ax2) = plt.subplots(1,2)
-        # fig, ax1 = plt.subplots(1,1)
         self.ax2 = ax2
         self.ax2.set_xscale('log')
 
-        # plot circle
+        #Plot circle
         circle = np.linspace(0, 2*np.pi, 1000)
         circle_x = np.cos(circle)
         circle_Y = np.sin(circle)
         ax1.plot(circle_x, circle_Y)
 
-        # plot particles
+        #Plot particles
         points = []
         for i, particle in self.particles.items():
             points.append(particle.vec())
@@ -189,27 +207,34 @@ class sim():
         scat = ax1.scatter(points[:, 0], points[:, 1], label=f'{i}')
         line2, = ax2.plot(self.temperature_list, self.energy_list)
         line, = ax2.plot(self.temperature_list, self.specific_heat_list)
-        self.sl = [scat, line, line2]
 
-        
-        self.ani = animation.FuncAnimation(fig=fig, func=self.update, frames=10, blit=True, interval=30)
+        self.sl = [scat, line, line2]
+        self.ani = animation.FuncAnimation(fig=fig, func=self.update, 
+                                           frames=10, blit=True, interval=30)
         ax1.set_aspect('equal')
         plt.show()
 
+
     def end_config(self):
+        '.'
         radii = []
         middle = 0
+
         for i, particle in self.particles.items():
             r = particle.r
             radii.append(r)
+
             if r < 0.8:
                 middle += 1
+
         return middle
 
 
 class particle():
+    '.'
 
     def __init__(self, i) -> None:
+        '.'
         self.id = i
         self.r = np.random.rand()
         self.theta = np.random.rand()*2*np.pi
@@ -218,25 +243,30 @@ class particle():
         self.last_i = -1
         self.last_force = 0
     
+
     def get_xy(self):
+        '.'
         return self.x, self.y
 
+
     def vec(self):
+        '.'
         return np.array([self.x, self.y])
 
+
     def force(self, particles, i):
-        # if force is needed for same particle at same step. i.e step was outside bc. reuse force from last calc
+        '.'
+        #Reuse previous force if step was outside
         if i == self.last_i:
             return self.last_force
 
         pos = self.vec()
-
         total_force = 0
-        # force of particles
+
+        #Force of particles
         for i, particle in particles.items():
             if i != self.id:
 
-                #dist_to_particle = np.sqrt((x_other - x_self)**2 + (y_other - y_self)**2)
                 vec_to_particle = pos - particle.vec()
                 dist_to_particle = np.sqrt(vec_to_particle.dot(vec_to_particle))
                 force_to_particle = vec_to_particle/dist_to_particle**3
@@ -248,29 +278,37 @@ class particle():
 
         return total_force
 
+
     def energy(self, particles):
+        '.'
         pos = self.vec()
         energy = 0
-        for i, particle in particles.items():
-            if i != self.id and i > self.id: # only check i > id to avoid duplicates
 
-                #dist_to_particle = np.sqrt((x_other - x_self)**2 + (y_other - y_self)**2)
+        for i, particle in particles.items():
+            #Only check i > id to avoid duplicates
+            if i != self.id and i > self.id: 
                 vec_to_particle = particle.vec() - pos 
                 dist_to_particle = np.sqrt(vec_to_particle.dot(vec_to_particle))
 
                 energy += 1/dist_to_particle
+
         return energy
 
+
     def update(self, new_pos):
+        '.'
         x = new_pos[0]
         y = new_pos[1]
         r = np.sqrt(x**2 + y**2)
+
         if 1 - r <= 0:
             return False
+
         self.x = x
         self.y = y
         self.theta = np.arctan(self.y/self.x)
         self.r = r
+
         return True
 
 
@@ -292,15 +330,15 @@ def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
         s.markov_chain_mc(stop_N)
         end_config = s.end_config()
         sim_count_total += 1
+        
         #Only accept simulations with correct number of center particles
         if end_config == mid:
             simulations += 1
-            
             sims.append(s)
-            print("accepted mid: ", end_config)
-            df = pd.concat([df, pd.DataFrame.from_dict(data={'E': [s.energy_list[-1]], 'N':[s.n_particles], 'Middle':[s.end_config()]})], ignore_index=True)
-        else:
-            print("not accepted mid: ", end_config)
+            df = pd.concat([df, pd.DataFrame.from_dict(data={
+                'E': [s.energy_list[-1]], 'N':[s.n_particles],
+                'Middle':[s.end_config()]})], ignore_index=True)
+
 
     df.to_csv('results.csv', index=False)
 
@@ -311,7 +349,7 @@ def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
     energy_mean = []
     energy_stdev = []
 
-    # steps needed for convergence
+    #Steps needed for convergence
     lengths = []
 
     #Truncate all lists to minimum length for plotting
@@ -333,8 +371,10 @@ def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
     iterations = list(range(len(energy_mean)))
 
     fontsize = 17
+
     #Plot mean and stdev.
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 5), gridspec_kw={'hspace': 0})
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 5), 
+                                   gridspec_kw={'hspace': 0})
 
     #Plot energy vs Temp.
     ax1.plot(iterations, energy_mean, label='Energy Mean', color='tab:blue')
@@ -346,6 +386,7 @@ def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
     ax1.grid(True)
     ax1.tick_params(labelbottom=False, labelsize=fontsize - 2)
     ax2.tick_params(labelsize=fontsize - 2)
+
     #Plot specific heat vs Temp.
     ax2.plot(iterations, sh_mean, label='Variance Mean', color='tab:green')
     ax2.fill_between(iterations, sh_mean - sh_std, sh_mean + sh_std, 
@@ -355,9 +396,12 @@ def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
     ax2.legend(fontsize=fontsize - 2)
     ax2.grid(True)
     plt.tight_layout()
-    plt.savefig(f'Figures/N_{N}_nsim{n_sim}_{schedule}.pdf', bbox_inches='tight', format='pdf')
+    plt.savefig(f'Figures/N_{N}_nsim{n_sim}_{schedule}.pdf', 
+                bbox_inches='tight', format='pdf')
     plt.show()
+
     return lengths, sim_count_total
+
 
 # sim = sim(16, schedule= 'logarithmic')
 # sim.animate()
