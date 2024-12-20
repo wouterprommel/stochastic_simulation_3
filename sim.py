@@ -291,18 +291,46 @@ def calc_mean(n_sim, N, stop_N, schedule='logarithmc'):
     energy_mean = np.mean(energy_array)
     energy_std = np.std(energy_array)
 
-    temp_array = np.array([s.temperature_list for s in sims])
-    temp_mean = np.mean(temp_array)
-    temp_std = np.std(temp_array)
+    #temp_array = np.array([s.temperature_list for s in sims])
+    #temp_mean = np.mean(temp_array)
+    #temp_std = np.std(temp_array)
 
     sh_array = np.array([s.specific_heat_list for s in sims])
     sh_mean = np.mean(sh_array)
     sh_std = np.std(sh_array)
 
+    #Plot mean and stdev.
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12))
+
+    #Plot energy vs Temp.
+    ax1.plot(temp_mean, energy_mean, label='Energy Mean', color='blue')
+    ax1.fill_between(temp_mean, energy_mean - energy_std, energy_mean + energy_std, color='blue', alpha=0.2, label='Energy Std')
+   # ax1.set_title('Energy vs Temperature')
+    ax1.set_xlabel('Temperature')
+    ax1.set_ylabel('Energy')
+    ax1.legend()
+
+    #Plot specific heat vs Temp.
+    ax2.plot(temp_mean, sh_mean, label='Specific Heat Mean', color='green')
+    ax2.fill_between(temp_mean, sh_mean - sh_std, sh_mean + sh_std, color='green', alpha=0.2, label='Specific Heat Std')
+    #ax2.set_title('Specific Heat vs Temperature')
+    ax2.set_xlabel('Temperature')
+    ax2.set_ylabel('Specific Heat')
+    ax2.legend()
+
+    plt.tight_layout()
+    plt.show()
+
+    
+
 
 def plot_mean():
     return
 
+n_sim = 10
+N = 16
+stop_N = 5000
+calc_mean(n_sim, N, stop_N)
 
 # 16: 3-circle, 116.57
 
