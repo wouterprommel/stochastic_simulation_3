@@ -288,6 +288,7 @@ def calc_mean(n_sim, N, stop_N, schedule='logarithmc'):
 
     #Minimum length (for plotting, mean and stdev)
     min_length = min(len(s.temperature_list) for s in sims)
+    temp = np.array(sims[0].temperature_list[:min_length])
 
     #Save last energy before truncation
     energy_end = []
@@ -298,36 +299,31 @@ def calc_mean(n_sim, N, stop_N, schedule='logarithmc'):
     for s in sims:
         energy_end.append(s.energy_list[-1])
         s.energy_list = s.energy_list[:min_length]
-        s.temperature_list = s.temperature_list[:min_length]
         s.specific_heat_list = s.specific_heat_list[:min_length]
 
     #Calculate mean and standard deviation per simulation
     energy_array = np.array([s.energy_list for s in sims])
-    energy_mean = np.mean(energy_array)
-    energy_std = np.std(energy_array)
-
-    #temp_array = np.array([s.temperature_list for s in sims])
-    #temp_mean = np.mean(temp_array)
-    #temp_std = np.std(temp_array)
+    energy_mean = np.mean(energy_array, axis=0)
+    energy_std = np.std(energy_array, axis=0)
 
     sh_array = np.array([s.specific_heat_list for s in sims])
-    sh_mean = np.mean(sh_array)
-    sh_std = np.std(sh_array)
+    sh_mean = np.mean(sh_array, axis=0)
+    sh_std = np.std(sh_array, axis=0)
 
     #Plot mean and stdev.
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12))
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5, 6))
 
     #Plot energy vs Temp.
-    ax1.plot(temp_mean, energy_mean, label='Energy Mean', color='blue')
-    ax1.fill_between(temp_mean, energy_mean - energy_std, energy_mean + energy_std, color='blue', alpha=0.2, label='Energy Std')
+    ax1.plot(temp, energy_mean, label='Energy Mean', color='blue')
+    #ax1.fill_between(temp, energy_mean - energy_std, energy_mean + energy_std, color='blue', alpha=0.2, label='Energy Std')
    # ax1.set_title('Energy vs Temperature')
     ax1.set_xlabel('Temperature')
     ax1.set_ylabel('Energy')
     ax1.legend()
 
     #Plot specific heat vs Temp.
-    ax2.plot(temp_mean, sh_mean, label='Specific Heat Mean', color='green')
-    ax2.fill_between(temp_mean, sh_mean - sh_std, sh_mean + sh_std, color='green', alpha=0.2, label='Specific Heat Std')
+    ax2.plot(temp, sh_mean, label='Specific Heat Mean', color='green')
+    #ax2.fill_between(temp_mean, sh_mean - sh_std, sh_mean + sh_std, color='green', alpha=0.2, label='Specific Heat Std')
     #ax2.set_title('Specific Heat vs Temperature')
     ax2.set_xlabel('Temperature')
     ax2.set_ylabel('Specific Heat')
@@ -338,12 +334,11 @@ def calc_mean(n_sim, N, stop_N, schedule='logarithmc'):
 
     
 
-
 def plot_mean():
     return
 
 n_sim = 10
-N = 16
+N = 5
 stop_N = 5000
 calc_mean(n_sim, N, stop_N)
 
