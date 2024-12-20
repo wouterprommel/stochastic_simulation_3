@@ -292,13 +292,12 @@ def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
         end_config = s.end_config()
         #Only accept simulations with correct number of center particles
         if end_config == mid:
+            simulations += 1
             sims.append(s)
             print("accepted mid: ", end_config)
             df = pd.concat([df, pd.DataFrame.from_dict(data={'E': [s.energy_list[-1]], 'N':[s.n_particles], 'Middle':[s.end_config()]})], ignore_index=True)
         else:
             print("not accepted mid: ", end_config)
-    
-    print(len(simulations))
 
     df.to_csv('results.csv', index=False)
 
@@ -383,7 +382,7 @@ plt.show()
 
 df = pd.read_csv('results.csv')
 
-print(df[df['N'] == 39])
+#print(df[df['N'] == 39])
 # simm = sim(21, schedule= 'logarithmic')
 # simm.markov_chain_mc(5000)
 # minimum_length = len(simm.temperature_list)
