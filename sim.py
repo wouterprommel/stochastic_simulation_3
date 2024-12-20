@@ -1,12 +1,11 @@
 """
 This module simulates the behavior of particles under various schedules 
 using a Markov Chain Monte Carlo (MCMC) method. It includes 
-visualization, energy, and specific heat calculations to study particle 
+visualization, energy, and variance calculations to study particle 
 interactions.
 """
 
 import numpy as np
-import time 
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import pandas as pd
@@ -16,15 +15,40 @@ plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 
 
-class sim():
-    """Class to represent the simulation of particles using MCMC."""
+class sim:
+    """
+    Class to simulate the behavior of particles using a Markov Chain 
+    Monte Carlo (MCMC) method.
 
-    def __init__(self, n, schedule = 'default'):
+    Methods:
+    step(particle):
+        Calculates the step vector for a given particle based on random 
+        motion and inter-particle forces.
+    markov_chain_mc(N, n=None, schedule='default', alpha=0.95, 
+                    markov_chain_length=200):
+        Performs the MCMC simulation for a specified number of steps and 
+        updates the system.
+    energy():
+        Calculates and returns the total energy of the system.
+    plot():
+        Visualizes the system's energy, specific heat trends, and 
+        particle configuration.
+    update(n):
+        Updates the visualization for a single frame of the animation.
+    animate():
+        Creates and displays an animated visualization of the simulation.
+    end_config():
+        Returns the number of particles located near the center of the 
+        circular boundary.
+    """
+
+
+    def __init__(self, n, schedule='default'):
         """
         Initializes the simulation with the given number of particles 
         and schedule.
 
-        Arguments:
+        Parameters:
             n (int): Number of particles.
             schedule (str): Schedule type for temperature adjustment.
         """
@@ -32,8 +56,10 @@ class sim():
         self.n_particles = n
         self.particles = {}
         self.ani = None
+
         for i in range(self.n_particles):
             self.particles[i] = particle(i)
+
         self.T = 1000 #Start temp
         self.T0 = 1000
         self.i_step = 1
@@ -45,7 +71,14 @@ class sim():
 
     
     def step(self, particle):
-        '.'
+        """
+        Calculate the step vector for a given particle.
+
+        Parameters:
+            particle (particle): A particle object.
+
+        Returns the step vector as an array.
+        """
         force = particle.force(self.particles, self.i_step)
         force_norm = np.sqrt(force.dot(force))
 
@@ -60,11 +93,19 @@ class sim():
 
     def markov_chain_mc(self, N, n=None, schedule='default', alpha=0.95, 
                         markov_chain_length=200):
-        '.'
-        start = time.time()
+        """
+        Performs the Markov Chain Monte Carlo (MCMC) simulation.
+
+        Parameters:
+            N (int): Number of simulation steps.
+            n (int, optional): Additional parameter.
+            schedule (str): Schedule type for temperature adjustment.
+            alpha (float): Parameter controlling the cooling schedule.
+            markov_chain_length (int): Length of the Markov chain for 
+            updates.
+        """
         for group_step in range(N):
             if group_step % 150 == 0 and N > 1:
-                now = time.time()
 
                 print('E', self.energy(), 'step', self.i_step, 'step size', 
                       self.step_size, 'temp', self.T, self.end_config())
@@ -133,15 +174,26 @@ class sim():
 
 
     def energy(self):
-        '.'
+        """Calculates and returns the total energy of the system."""
         total_energy = 0
         for i, particle in self.particles.items():
             total_energy += particle.energy(self.particles)
 
         return total_energy 
 
+
     def plot(self):
-        '.'
+        """
+        Plot the simulation data including energy and specific heat 
+        trends over the simulation steps, as well as the spatial 
+        configuration of particles within a circular boundary.
+
+        This method creates a two-panel plot:
+        1. A scatter plot showing the positions of particles overlaid on
+        a unit circle.
+        2. A line plot displaying energy and specific heat values versus 
+        iteration steps on a logarithmic x-axis.
+        """
         fig, axis = plt.subplots(1,2)
 
         axis[1].plot(range(self.i_step), np.array(self.energy_list))
@@ -166,7 +218,22 @@ class sim():
     
 
     def update(self, n):
-        '.'
+        """
+        Update the simulation visualization for a single animation frame.
+
+        This method performs a single step of the simulation using the 
+        Markov Chain Monte Carlo (MCMC) method, updates the positions of 
+        particles, and refreshes the plot elements to reflect the new 
+        state.
+
+        Parameters:
+        n (int): The current frame number for the animation (not 
+            explicitly used within the method but required by the
+            animation framework).
+
+        Returns a list of plot elements (`self.sl`) that have been 
+        updated. This is required for Matplotlib's animation framework.
+        """
         self.markov_chain_mc(1, n=n)
         points = []
         for i, particle in self.particles.items():
@@ -187,7 +254,15 @@ class sim():
 
 
     def animate(self):
-        '.'
+        """
+        Creates and displays an animated visualization of the simulation.
+
+        Visualization Details:
+        - Left plot: Shows a circular boundary and the current positions 
+        of particles.
+        - Right plot: Displays the system's energy and specific heat as 
+        functions of time (logarithmic scale).
+        """
         fig, (ax1, ax2) = plt.subplots(1,2)
         self.ax2 = ax2
         self.ax2.set_xscale('log')
@@ -216,7 +291,9 @@ class sim():
 
 
     def end_config(self):
-        '.'
+        """Returns the number of particles present in the middle of 
+        the circle."""
+        
         radii = []
         middle = 0
 
@@ -231,10 +308,32 @@ class sim():
 
 
 class particle():
-    '.'
+    """
+    A class to represent a particle in a system interacting with other 
+    particles.
+
+    Methods:
+    get_xy():
+        Returns the current (x, y) coordinates.
+    vec():
+        Returns the particle's position as a NumPy array.
+    force(particles, i):
+        Computes and returns the net force on the particle due to other 
+        particles.
+    energy(particles):
+        Computes and returns the potential energy of the particle with 
+        others.
+    update(new_pos):
+        Updates the particle's position if within valid bounds.
+    """
 
     def __init__(self, i) -> None:
-        '.'
+        """
+        Initialize a particle with random position inside a unit circle.
+        
+        Parameters:
+        i (int): Unique identifier for the particle.
+        """
         self.id = i
         self.r = np.random.rand()
         self.theta = np.random.rand()*2*np.pi
@@ -245,17 +344,26 @@ class particle():
     
 
     def get_xy(self):
-        '.'
+        """Returns the (x, y) coordinates of the particle as a tuple."""
         return self.x, self.y
 
 
     def vec(self):
-        '.'
+        """Returns the particle's position as a NumPy array."""
         return np.array([self.x, self.y])
 
 
     def force(self, particles, i):
-        '.'
+        """
+        Computes the net force acting on the particle due to 
+        interactions with others.
+
+        Parameters:
+        particles (dict): A dictionary of other particles in the system.
+        i (int): The current simulation step index.
+
+        Returns a 2D array representing the net force vector.
+        """
         #Reuse previous force if step was outside
         if i == self.last_i:
             return self.last_force
@@ -280,7 +388,15 @@ class particle():
 
 
     def energy(self, particles):
-        '.'
+        """
+        Computes the potential energy of the particle due to interactions
+        with others.
+
+        Parameters:
+        particles (dict): A dictionary of other particles in the system.
+
+        Returns a float of the total potential energy.
+        """
         pos = self.vec()
         energy = 0
 
@@ -296,7 +412,15 @@ class particle():
 
 
     def update(self, new_pos):
-        '.'
+        """
+        Updates the particle's position if the new position is valid.
+
+        Parameters:
+        new_pos (tuple): A tuple (x, y) representing the new position.
+
+        Returns a bool that is true if the update is successful, False 
+        otherwise.
+        """
         x = new_pos[0]
         y = new_pos[1]
         r = np.sqrt(x**2 + y**2)
@@ -313,10 +437,30 @@ class particle():
 
 
 def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
-    """Runs the simulation N times to calculate and plot mean and stdev among 
-    multiple runs with the same parameters.
     """
-    
+    Calculates and visualizes the mean and standard deviation of energy 
+    and variance across multiple simulations, only accepting simulations 
+    that converge to the specified number of central particles.
+
+    Parameters:
+    n_sim (int): Number of accepted simulations to perform.
+    N (int): Number of particles in each simulation.
+    stop_N (int): Number of steps to run for each simulation.
+    mid (int): Desired number of particles near the center to consider a 
+        simulation as accepted.
+    schedule (string, optional): Cooling schedule type for temperature 
+        adjustment. Default is 'logarithmc'.
+
+    Returns a list containing the lengths of the energy lists for all 
+    accepted simulations and the total number of simulations performed, 
+    including rejected ones.
+
+    Visualization:
+    - Plots the mean and standard deviation of energy and variance 
+      across accepted simulations.
+    - Saves the plot as a PDF in the `Figures` directory, with a 
+      filename reflecting the parameters.
+    """
     df = pd.read_csv('results.csv')
 
     #Store all simulations in a list
@@ -403,13 +547,10 @@ def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
     return lengths, sim_count_total
 
 
-# sim = sim(16, schedule= 'logarithmic')
-# sim.animate()
-# sim.markov_chain_mc(5000)
-
-n_sim = 5
-N = 12
-stop_N = 5000
+#Parameters for run
+n_sim = 2 #Number of accepted simulations
+N = 12 #Number of particles
+stop_N = 5000 #Maximum number of steps in a group
 
 #Signifies expected number of particles not on the ring
 mid = 1
@@ -418,59 +559,7 @@ mid = 1
 # calc_mean(n_sim, 16, stop_N, 2, schedule='logarithmic')
 # calc_mean(n_sim, 17, stop_N, 3, schedule='logarithmic')
 lengths, total = calc_mean(n_sim, N, stop_N, mid, schedule='logarithmic')
+
 print(np.mean(lengths), np.std(lengths), total, n_sim/total)
 
-# 16: 3-circle, 116.57
 
-# sim = sim(11, schedule= 'linear')
-# sim = sim(11, schedule= 'exponential')
-
-#sim = sim(39, schedule= 'logarithmic')
-
-'''# sim.markov_chain_mc(5000)
-print('------------- \n end energy: ', sim.energy(), 'step: ', sim.i_step, '\n ------------------')
-plt.plot( sim.temperature_list, np.array(sim.energy_list), label='Total system energy')
-plt.plot(sim.temperature_list, sim.specific_heat_list, label='Specific Heat')
-# plt.plot(range(sim.i_step-1), sim.specific_heat_list, label='Specific Heat 2')
-plt.xscale('log')
-# plt.yscale('log')
-plt.show()
-# sim.plot()
-
-# print(df)
-# sim.plot()'''
-
-df = pd.read_csv('results.csv')
-
-#print(df[df['N'] == 39])
-# simm = sim(21, schedule= 'logarithmic')
-# simm.markov_chain_mc(5000)
-# minimum_length = len(simm.temperature_list)
-'''
-for N in range(12, 41):
-    for _ in range(8):
-        simm = sim(N, schedule= 'logarithmic')
-        simm.markov_chain_mc(5000)
-        length = len(simm.temperature_list)
-    # if len(simm.temperature_list) < :
-            #min_length = 
-        #print("Length temp list: ", len(simm.temperature_list))
-        df_simm = pd.DataFrame.from_dict(data={'E': [simm.energy_list[-1]], 'N':[simm.n_particles], 'Middle':[simm.end_config()]})
-        df = pd.concat([df, df_simm], ignore_index=True)
-        print(df_simm)
-        print("t at 1000 ", simm.temperature_list[1000])
-        #energy = np.array(simm.energy_list)
-        #energy_mean = np.mean(energy)
-        #energy_stdev = np.std(energy)
-        # clean sim for rerun
-        print(df[df['N'] == N]['E'])
-        if sum(df['N'] == N) == 0 or all(df[df['N'] == N]['E'] >= simm.energy_list[-1]):
-            with open(f'sims/sim_obj_{N}.obj', 'wb') as f:
-                print('save obj')
-                pickle.dump(simm, f)
-
-
-
-        #print(sim.energy_list)
-        df.to_csv('results.csv', index=False)
-        '''
