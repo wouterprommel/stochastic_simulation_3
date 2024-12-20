@@ -11,8 +11,8 @@ import matplotlib.animation as animation
 import pandas as pd
 import pickle
 
-plt.rc('text', usetex=True)
-plt.rc('font', family='serif')
+#plt.rc('text', usetex=True)
+#plt.rc('font', family='serif')
 
 
 class sim:
@@ -31,7 +31,7 @@ class sim:
     energy():
         Calculates and returns the total energy of the system.
     plot():
-        Visualizes the system's energy, specific heat trends, and 
+        Visualizes the system's energy, variance trends, and 
         particle configuration.
     update(n):
         Updates the visualization for a single frame of the animation.
@@ -65,7 +65,7 @@ class sim:
         self.i_step = 1
         self.energy_list = [self.energy()]
         self.temperature_list = [self.T0]
-        self.specific_heat_list = [0]
+        self.variance_list = [0]
         self.step_size = 0.06 # 0.06
         self.step_size0 = 0.06 # 0.06
 
@@ -138,8 +138,8 @@ class sim:
                 self.temperature_list.append(self.T)
                 E = np.array(self.energy_list)
 
-                specific_heat = (E.dot(E) / len(E) - np.mean(E) ** 2)
-                self.specific_heat_list.append(specific_heat)
+                variance = (E.dot(E) / len(E) - np.mean(E) ** 2)
+                self.variance_list.append(variance)
 
                 step = self.step(particle)
 
@@ -184,20 +184,20 @@ class sim:
 
     def plot(self):
         """
-        Plot the simulation data including energy and specific heat 
+        Plot the simulation data including energy and variance 
         trends over the simulation steps, as well as the spatial 
         configuration of particles within a circular boundary.
 
         This method creates a two-panel plot:
         1. A scatter plot showing the positions of particles overlaid on
         a unit circle.
-        2. A line plot displaying energy and specific heat values versus 
+        2. A line plot displaying energy and variance values versus 
         iteration steps on a logarithmic x-axis.
         """
         fig, axis = plt.subplots(1,2)
 
         axis[1].plot(range(self.i_step), np.array(self.energy_list))
-        axis[1].plot(range(self.i_step), self.specific_heat_list)
+        axis[1].plot(range(self.i_step), self.variance_list)
         axis[1].set_xscale('log')
 
         #Plot circle
@@ -243,10 +243,10 @@ class sim:
 
         self.sl[0].set_offsets(points)
         self.sl[2].set_data(self.temperature_list, self.energy_list)
-        self.sl[1].set_data(self.temperature_list, self.specific_heat_list)
+        self.sl[1].set_data(self.temperature_list, self.variance_list)
 
-        self.ax2.set_ylim(min(self.specific_heat_list), 
-                          max(self.specific_heat_list))
+        self.ax2.set_ylim(min(self.variance_list), 
+                          max(self.variance_list))
         self.ax2.set_xlim(1e-3, 1e3)
         self.ax2.set_xscale('log')
 
@@ -260,7 +260,7 @@ class sim:
         Visualization Details:
         - Left plot: Shows a circular boundary and the current positions 
         of particles.
-        - Right plot: Displays the system's energy and specific heat as 
+        - Right plot: Displays the system's energy and variance as 
         functions of time (logarithmic scale).
         """
         fig, (ax1, ax2) = plt.subplots(1,2)
@@ -281,7 +281,7 @@ class sim:
         points = np.array(points)
         scat = ax1.scatter(points[:, 0], points[:, 1], label=f'{i}')
         line2, = ax2.plot(self.temperature_list, self.energy_list)
-        line, = ax2.plot(self.temperature_list, self.specific_heat_list)
+        line, = ax2.plot(self.temperature_list, self.variance_list)
 
         self.sl = [scat, line, line2]
         self.ani = animation.FuncAnimation(fig=fig, func=self.update, 
@@ -501,16 +501,16 @@ def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
         energy_end.append(s.energy_list[-1])
         lengths.append(len(s.energy_list))
         s.energy_list = s.energy_list[:min_length]
-        s.specific_heat_list = s.specific_heat_list[:min_length]
+        s.variance_list = s.variance_list[:min_length]
 
     #Calculate mean and standard deviation per simulation
     energy_array = np.array([s.energy_list for s in sims])
     energy_mean = np.mean(energy_array, axis=0)
     energy_std = np.std(energy_array, axis=0)
 
-    sh_array = np.array([s.specific_heat_list for s in sims])
-    sh_mean = np.mean(sh_array, axis=0)
-    sh_std = np.std(sh_array, axis=0)
+    var_array = np.array([s.variance_list for s in sims])
+    var_mean = np.mean(var_array, axis=0)
+    var_std = np.std(var_array, axis=0)
 
     iterations = list(range(len(energy_mean)))
 
@@ -531,9 +531,9 @@ def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
     ax1.tick_params(labelbottom=False, labelsize=fontsize - 2)
     ax2.tick_params(labelsize=fontsize - 2)
 
-    #Plot specific heat vs Temp.
-    ax2.plot(iterations, sh_mean, label='Variance Mean', color='tab:green')
-    ax2.fill_between(iterations, sh_mean - sh_std, sh_mean + sh_std, 
+    #Plot Variance vs Temp.
+    ax2.plot(iterations, var_mean, label='Variance Mean', color='tab:green')
+    ax2.fill_between(iterations, var_mean - var_std, var_mean + var_std, 
                      color='tab:green', alpha=0.2, label='Variance Std')
     ax2.set_xlabel('Iterations', fontsize=fontsize)
     ax2.set_ylabel('Variance', fontsize=fontsize)
