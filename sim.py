@@ -278,12 +278,7 @@ def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
 
     #Store all simulations in a list
     sims = []
-    '''for _ in range(n_sim):
-        s = sim(N, schedule)
-        s.markov_chain_mc(stop_N)
-        sims.append(s)
-        df = pd.concat([df, pd.DataFrame.from_dict(data={'E': [s.energy_list[-1]], 'N':[s.n_particles], 'Middle':[s.end_config()]})], ignore_index=True)
-    '''
+
     #Number of simulations with accepted outcome
     simulations = 0
     while simulations != n_sim:
@@ -329,9 +324,9 @@ def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5, 6), gridspec_kw={'hspace': 0})
 
     #Plot energy vs Temp.
-    ax1.plot(iterations, energy_mean, label='Energy Mean', color='blue')
+    ax1.plot(iterations, energy_mean, label='Energy Mean', color='tab:blue')
     ax1.fill_between(iterations, energy_mean - energy_std, 
-                     energy_mean + energy_std, color='blue', 
+                     energy_mean + energy_std, color='tab:blue', 
                      alpha=0.2, label='Energy Std')
     ax1.set_ylabel('Energy')
     ax1.legend()
@@ -339,9 +334,9 @@ def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
     ax1.tick_params(labelbottom=False)
 
     #Plot specific heat vs Temp.
-    ax2.plot(iterations, sh_mean, label='Specific Heat Mean', color='green')
+    ax2.plot(iterations, sh_mean, label='Specific Heat Mean', color='tab:green')
     ax2.fill_between(iterations, sh_mean - sh_std, sh_mean + sh_std, 
-                     color='green', alpha=0.2, label='Specific Heat Std')
+                     color='tab:green', alpha=0.2, label='Specific Heat Std')
     ax2.set_xlabel('Iterations')
     ax2.set_ylabel('Specific Heat')
     ax2.legend()
