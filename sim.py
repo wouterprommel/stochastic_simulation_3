@@ -345,20 +345,21 @@ def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
     ax2.set_ylabel('Specific Heat', fontsize=fontsize)
     ax2.legend(fontsize=fontsize - 2)
     ax2.grid(True)
-
     plt.tight_layout()
     plt.savefig(f'Figures/N_{N}_nsim{n_sim}_{schedule}.pdf', bbox_inches='tight', format='pdf')
     plt.show()
 
 
-n_sim = 1
+n_sim = 5
 N = 12
 stop_N = 5000
 
 #Signifies expected number of particles not on the ring
 mid = 1
 
-calc_mean(n_sim, N, stop_N, mid, schedule='exponential')
+calc_mean(n_sim, 12, stop_N, 1, schedule='logarithmic')
+calc_mean(n_sim, 16, stop_N, 2, schedule='logarithmic')
+calc_mean(n_sim, 17, stop_N, 3, schedule='logarithmic')
 
 # 16: 3-circle, 116.57
 
