@@ -42,10 +42,10 @@ class sim():
         # step = (force/force_norm * np.random.uniform(0, self.step_size))
         return step
 
-    def markov_chain_mc(self, N, n=None, schedule='default', alpha=0.95, markov_chain_length=50):
+    def markov_chain_mc(self, N, n=None, schedule='default', alpha=0.95, markov_chain_length=200):
         start = time.time()
         for group_step in range(N):
-            if group_step % 100 == 0 and N > 1:
+            if group_step % 150 == 0 and N > 1:
                 now = time.time()
                 #print("current time elapsed: ", now - start)
                 print('E', self.energy(), 'step', self.i_step, 'step size', self.step_size, 'temp', self.T, self.end_config())
@@ -286,15 +286,16 @@ def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
 
     #Number of simulations with accepted outcome
     simulations = 0
-    sim_coun_total = 0
+    sim_count_total = 0
     while simulations != n_sim:
         s = sim(N, schedule)
         s.markov_chain_mc(stop_N)
         end_config = s.end_config()
+        sim_count_total += 1
         #Only accept simulations with correct number of center particles
         if end_config == mid:
             simulations += 1
-            sim_count_total += 1
+            
             sims.append(s)
             print("accepted mid: ", end_config)
             df = pd.concat([df, pd.DataFrame.from_dict(data={'E': [s.energy_list[-1]], 'N':[s.n_particles], 'Middle':[s.end_config()]})], ignore_index=True)
@@ -356,7 +357,7 @@ def calc_mean(n_sim, N, stop_N, mid, schedule='logarithmc'):
     plt.tight_layout()
     plt.savefig(f'Figures/N_{N}_nsim{n_sim}_{schedule}.pdf', bbox_inches='tight', format='pdf')
     plt.show()
-    return lengths, sim_coun_total
+    return lengths, sim_count_total
 
 # sim = sim(16, schedule= 'logarithmic')
 # sim.animate()
@@ -369,11 +370,11 @@ stop_N = 5000
 #Signifies expected number of particles not on the ring
 mid = 1
 
-calc_mean(n_sim, 12, stop_N, 1, schedule='logarithmic')
-calc_mean(n_sim, 16, stop_N, 2, schedule='logarithmic')
-calc_mean(n_sim, 17, stop_N, 3, schedule='logarithmic')
-lengths = calc_mean(n_sim, N, stop_N, mid, schedule='exponential')
-print(np.mean(lengths), np.std(lengths))
+# calc_mean(n_sim, 12, stop_N, 1, schedule='logarithmic')
+# calc_mean(n_sim, 16, stop_N, 2, schedule='logarithmic')
+# calc_mean(n_sim, 17, stop_N, 3, schedule='logarithmic')
+lengths, total = calc_mean(n_sim, N, stop_N, mid, schedule='logarithmic')
+print(np.mean(lengths), np.std(lengths), total, n_sim/total)
 
 # 16: 3-circle, 116.57
 
